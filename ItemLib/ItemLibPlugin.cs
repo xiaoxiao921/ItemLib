@@ -1,5 +1,8 @@
 ﻿using BepInEx;
+using MonoMod.Cil;
 using RoR2;
+using System;
+using UnityEngine;
 
 namespace ItemLib
 {
@@ -15,16 +18,16 @@ namespace ItemLib
         {
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
 
-            On.RoR2.Console.Awake += (orig, self) =>
+            /*On.RoR2.Console.Awake += (orig, self) =>
             {
                 CommandHelper.RegisterCommands(self);
                 orig(self);
-            };
+            };*/
 
             ItemLib.Initialize();
         }
 
-        [ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer, helpText = "Give custom item")]
+        /*[ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer, helpText = "Give custom item")]
         private static void customitem(ConCommandArgs args)
         {
 
@@ -48,6 +51,18 @@ namespace ItemLib
                     itemType = (ItemIndex)itemIndex;
                     inventory.GiveItem(itemType, itemCount);
                 }
+            }
+        }*/
+
+        public void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                var dropList = Run.instance.availableTier1DropList;
+                Chat.AddMessage(dropList.Count.ToString());
+                var nextItem = Run.instance.treasureRng.RangeInt(0, dropList.Count);
+                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                //PickupDropletController.CreatePickupDroplet(dropList[78], transform.position, transform.forward * 20f);
             }
         }
     }
