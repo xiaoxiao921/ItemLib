@@ -18,16 +18,16 @@ namespace ItemLib
         {
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
 
-            /*On.RoR2.Console.Awake += (orig, self) =>
+            On.RoR2.Console.Awake += (orig, self) =>
             {
                 CommandHelper.RegisterCommands(self);
                 orig(self);
-            };*/
+            };
 
             ItemLib.Initialize();
         }
 
-        /*[ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer, helpText = "Give custom item")]
+        [ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer, helpText = "Give custom item")]
         private static void customitem(ConCommandArgs args)
         {
 
@@ -52,7 +52,7 @@ namespace ItemLib
                     inventory.GiveItem(itemType, itemCount);
                 }
             }
-        }*/
+        }
 
         public void Update()
         {
