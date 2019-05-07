@@ -23,6 +23,7 @@ namespace ItemLib
 
         public static void Initialize()
         {
+            // https://discordapp.com/channels/562704639141740588/562704639569428506/575081634898903040 ModRecalc implementation ?
             // Get all the custom items (ItemDef) from all mods that are using ItemLib.
             List<Assembly> allAssemblies = new List<Assembly>();
             string path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -143,9 +144,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.Inventory.HasAtLeastXTotalItemsOfTier += il =>
@@ -155,8 +155,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(78)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.Inventory.GetTotalItemCountOfTier += il =>
@@ -166,8 +166,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.RunReport.PlayerInfo.Generate += il =>
@@ -177,8 +177,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.Achievements.Discover10UniqueTier1Achievement.UniqueTier1Discovered += il =>
@@ -188,8 +188,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.Run.BuildDropTable += il =>
@@ -199,8 +199,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.ItemCatalog.AllItemsEnumerator.MoveNext += il => // exception if no extended array size for DefineItems()
@@ -210,20 +210,19 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
-            IL.RoR2.ItemCatalog.GetItemDef += il =>
+            IL.RoR2.ItemCatalog.GetItemDef += il => // FIXME
             {
                 ILCursor cursor = new ILCursor(il);
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                 
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount+customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount; // if (itemIndex < ItemIndex.Syringe || itemIndex >= ItemIndex.Count) return null;
             };
 
             IL.RoR2.ItemCatalog.RequestItemOrderBuffer += il =>
@@ -234,7 +233,7 @@ namespace ItemLib
                         i => i.MatchLdcI4(originalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = 79;
+                cursor.Next.Operand = originalItemCount + customItemCount; // ble instruction, need to do it this way in particular.
             };
 
             IL.RoR2.ItemCatalog.RequestItemStackArray += il =>
@@ -245,8 +244,8 @@ namespace ItemLib
                         i => i.MatchLdcI4(originalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = 79;
-                
+                cursor.Next.Operand = originalItemCount + customItemCount; // same as above
+
             };
 
             // Changing all hard coded array
@@ -276,8 +275,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.Inventory.ctor += il =>
@@ -287,8 +286,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.CharacterModel.ctor += il =>
@@ -298,8 +297,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             // PickupIndex, another set of hardcoded shit
@@ -311,50 +310,50 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105) // hitting lunarcoin1. this == lunarcoinStart originalitemcount + originalequipmentcount
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105+customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105) // pickupindex last
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(106) // pickupindex end
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 106 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 106 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(107) // allpickupnames string array
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 107 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 107 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount) // ItemIndex.count
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(79) // EquipmentIndex index start for allPickupNames array . originalItemCount + 1
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 79 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 79 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105) // lunar coin loop 
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105) // lunar coin loop pt 2
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
             };
 
             IL.RoR2.PickupIndex.ctor_EquipmentIndex += il =>
@@ -364,8 +363,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.PickupIndex.GetPickupDisplayPrefab += il =>
@@ -375,26 +374,26 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(106)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 106 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 106 + customItemCount;
             };
 
             IL.RoR2.PickupIndex.GetPickupDropletDisplayPrefab += il =>
@@ -404,20 +403,20 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(106)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 106 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 106 + customItemCount;
             };
 
             IL.RoR2.PickupIndex.GetPickupColor += il =>
@@ -427,26 +426,26 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(106)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 106 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 106 + customItemCount;
             };
 
             IL.RoR2.PickupIndex.GetPickupColorDark += il =>
@@ -456,26 +455,26 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(106)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 106 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 106 + customItemCount;
             };
 
             IL.RoR2.PickupIndex.GetPickupNameToken += il =>
@@ -485,26 +484,26 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(106)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 106 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 106 + customItemCount;
             };
 
             IL.RoR2.PickupIndex.GetUnlockableName += il =>
@@ -514,20 +513,20 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.PickupIndex.IsLunar += il =>
@@ -537,20 +536,20 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.PickupIndex.IsBoss += il =>
@@ -560,25 +559,23 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(105)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, 105 + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = 105 + customItemCount;
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             // ItemMask
-
-            
 
             IL.RoR2.ItemMask.HasItem += il =>
             {
@@ -587,8 +584,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.ItemMask.AddItem += il =>
@@ -598,8 +595,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             IL.RoR2.ItemMask.RemoveItem += il =>
@@ -609,8 +606,8 @@ namespace ItemLib
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
-                cursor.Remove();
-                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
             // RuleCatalog
@@ -623,7 +620,7 @@ namespace ItemLib
                         i => i.MatchLdcI4(originalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = 79;
+                cursor.Next.Operand = originalItemCount + customItemCount;
             };
         }
     }

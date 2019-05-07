@@ -60,9 +60,11 @@ namespace ItemLib
             {
                 var dropList = Run.instance.availableTier1DropList;
                 Chat.AddMessage(dropList.Count.ToString());
+                
                 var nextItem = Run.instance.treasureRng.RangeInt(0, dropList.Count);
                 var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                //PickupDropletController.CreatePickupDroplet(dropList[78], transform.position, transform.forward * 20f);
+                for (int i = 0; i != 21; i++)
+                    PickupDropletController.CreatePickupDroplet(dropList[i], transform.position, transform.forward * 20f);
             }
         }
     }
