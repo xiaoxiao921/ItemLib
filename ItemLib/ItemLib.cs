@@ -71,12 +71,14 @@ namespace ItemLib
             InitCatalogHook();
 
             // Call DefineItems because catalog is already made...
+            // Also hooking on it execute body method, EmitDelegate not included.
+
             Debug.Log("ItemCatalog.DefineItems()");
             MethodInfo DefineItems_MI = typeof(ItemCatalog).GetMethod("DefineItems", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             DefineItems_MI.Invoke(null, null);
 
 
-            Debug.Log("Hooking all others things (itemmask etc)");
+            Debug.Log("Hooking all others things");
             InitHooks();
 
         }
@@ -127,7 +129,7 @@ namespace ItemLib
                         MethodInfo RegisterItem_MI = typeof(ItemCatalog).GetMethod("RegisterItem", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                         object[] para = { (ItemIndex)(i + originalItemCount), itemDefList[i] };
                         RegisterItem_MI.Invoke(null, para);
-                        Debug.Log("adding item at index : " + (i + originalItemCount));
+                        Debug.Log("adding custom item at index : " + (i + originalItemCount));
                     }
                 });
             };
@@ -153,7 +155,7 @@ namespace ItemLib
                 ILCursor cursor = new ILCursor(il);
 
                 cursor.GotoNext(
-                        i => i.MatchLdcI4(78)
+                        i => i.MatchLdcI4(originalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = originalItemCount + customItemCount;
@@ -207,6 +209,7 @@ namespace ItemLib
             {
                 ILCursor cursor = new ILCursor(il);
 
+
                 cursor.GotoNext(
                         i => i.MatchLdcI4(originalItemCount)
                 );
@@ -214,7 +217,7 @@ namespace ItemLib
                 cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
-            IL.RoR2.ItemCatalog.GetItemDef += il => // FIXME
+            IL.RoR2.ItemCatalog.GetItemDef += il => 
             {
                 ILCursor cursor = new ILCursor(il);
 
@@ -222,7 +225,41 @@ namespace ItemLib
                         i => i.MatchLdcI4(originalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = originalItemCount + customItemCount; // if (itemIndex < ItemIndex.Syringe || itemIndex >= ItemIndex.Count) return null;
+                cursor.Next.Operand = originalItemCount + (customItemCount);
+
+                cursor.GotoNext(
+                        i => i.MatchBlt(out _)
+                );
+                cursor.Next.OpCode = OpCodes.Ble_S; // no effect since we + customitemCount anyway
+
+
+                // replacing method with only IL, funny stuff.
+                // I though that was gonna fix the error, apparently not LUL.
+
+                /*cursor.Index = 8;
+                var itemdfs = cursor.Next.Operand; // ldsfld operand
+
+                cursor.Index = 2;
+                cursor.RemoveRange(9); // remove old method, beginning same tho
+
+                cursor.Emit(OpCodes.Blt_S, cursor.MarkLabel()); // need to give a label, but the line isnt made already
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.Emit(OpCodes.Ldc_I4, originalItemCount + customItemCount);
+                cursor.Emit(OpCodes.Blt_S, cursor.MarkLabel());
+                cursor.Emit(OpCodes.Ldnull);
+                cursor.Index -= 1;
+                ILLabel label = cursor.MarkLabel();
+                cursor.Emit(OpCodes.Ret);
+                cursor.Emit(OpCodes.Ldsfld, itemdfs); // cant use reflection for the operand so hu
+                cursor.Index -= 1;
+                ILLabel label2 = cursor.MarkLabel();
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.Emit(OpCodes.Ldelem_Ref);
+
+                cursor.Index = 2;
+                cursor.Next.Operand = label;
+                cursor.Index = 5;
+                cursor.Next.Operand = label2;*/
             };
 
             IL.RoR2.ItemCatalog.RequestItemOrderBuffer += il =>
@@ -302,6 +339,7 @@ namespace ItemLib
             };
 
             // PickupIndex, another set of hardcoded shit
+            // The coin index is off, FIXME
 
             IL.RoR2.PickupIndex.cctor += il =>
             {
