@@ -99,6 +99,16 @@ namespace ItemLib
             return newItemDef;
         }
 
+        public static ItemDef GetItemDef(ItemIndex itemIndex)
+        {
+            int index = (int)itemIndex;
+            ItemDef[] array = (ItemDef[])typeof(ItemCatalog).GetField("itemDefs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+
+            if (index < 0 || index > originalItemCount + customItemCount)
+                return null;
+            return array[index];
+        }
+
         private static void InitCatalogHook()
         {
             // Make it so itemDefs is large enough for all the new items.
@@ -217,7 +227,7 @@ namespace ItemLib
                 cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
-            IL.RoR2.ItemCatalog.GetItemDef += il => 
+            /*IL.RoR2.ItemCatalog.GetItemDef += il => 
             {
                 ILCursor cursor = new ILCursor(il);
 
@@ -226,13 +236,7 @@ namespace ItemLib
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = originalItemCount + (customItemCount);
-
-                cursor.GotoNext(
-                        i => i.MatchBlt(out _)
-                );
-                cursor.Next.OpCode = OpCodes.Ble_S; // no effect since we + customitemCount anyway
-
-
+                
                 // replacing method with only IL, funny stuff.
                 // I though that was gonna fix the error, apparently not LUL.
 
@@ -259,8 +263,8 @@ namespace ItemLib
                 cursor.Index = 2;
                 cursor.Next.Operand = label;
                 cursor.Index = 5;
-                cursor.Next.Operand = label2;*/
-            };
+                cursor.Next.Operand = label2;
+            };*/
 
             IL.RoR2.ItemCatalog.RequestItemOrderBuffer += il =>
             {
@@ -341,7 +345,7 @@ namespace ItemLib
             // PickupIndex, another set of hardcoded shit
             // The coin index is off, FIXME
 
-            IL.RoR2.PickupIndex.cctor += il =>
+            /*IL.RoR2.PickupIndex.cctor += il =>
             {
                 ILCursor cursor = new ILCursor(il);
 
@@ -392,9 +396,9 @@ namespace ItemLib
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = 105 + customItemCount;
-            };
+            };*/
 
-            IL.RoR2.PickupIndex.ctor_EquipmentIndex += il =>
+            /*IL.RoR2.PickupIndex.ctor_EquipmentIndex += il =>
             {
                 ILCursor cursor = new ILCursor(il);
 
@@ -611,7 +615,7 @@ namespace ItemLib
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = originalItemCount + customItemCount;
-            };
+            };*/
 
             // ItemMask
 
@@ -648,6 +652,10 @@ namespace ItemLib
                 cursor.Next.Operand = originalItemCount + customItemCount;
             };
 
+            ItemMask all = (ItemMask)typeof(ItemMask).GetField("all", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+            for (int i = originalItemCount; i < originalItemCount + customItemCount; i++)
+                all.AddItem((ItemIndex)i);
+
             // RuleCatalog
 
             IL.RoR2.RuleCatalog.cctor += il =>
@@ -660,6 +668,11 @@ namespace ItemLib
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = originalItemCount + customItemCount;
             };
+
+            List<RuleDef> allRuleDefs = (List<RuleDef>)typeof(RuleCatalog).GetField("allRuleDefs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+            for (int i = originalItemCount; i < originalItemCount + customItemCount; i++)
+                allRuleDefs.Add(RuleDef.FromItem((ItemIndex)i));
+
         }
     }
 }

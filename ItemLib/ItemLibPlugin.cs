@@ -1,13 +1,9 @@
 ﻿using BepInEx;
-using MonoMod.Cil;
 using RoR2;
-using System;
-using System.Reflection;
 using UnityEngine;
 
 namespace ItemLib
 {
-    [BepInDependency("com.bepis.r2api")]
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
@@ -18,6 +14,7 @@ namespace ItemLib
         public ItemLibPlugin()
         {
             ItemLib.Initialize();
+
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
 
             On.RoR2.Console.Awake += (orig, self) =>
@@ -58,16 +55,11 @@ namespace ItemLib
         {
             if (Input.GetKeyDown(KeyCode.F3))
             {
-                // JUST TO BE SURE. This call "should" put the custom item at index 78 of the array. its just getItemDef returning null for some reason
-                Debug.Log("ItemCatalog.DefineItems()");
-                MethodInfo DefineItems_MI = typeof(ItemCatalog).GetMethod("DefineItems", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                DefineItems_MI.Invoke(null, null);
-
-                ItemDef[] array = (ItemDef[])typeof(ItemCatalog).GetField("itemDefs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
-                Debug.Log(array.Length);
-                array[78] = ItemLib.test();
-                Debug.Log(ItemCatalog.GetItemDef((ItemIndex)78)); // null
-                Debug.Log(array[78]); // not null...
+                var dropList = Run.instance.availableTier1DropList;
+                Debug.Log(dropList.Count);
+                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                for(int i = 0; i != dropList.Count;i++)
+                    PickupDropletController.CreatePickupDroplet(dropList[i], transform.position, transform.forward * 20f);
             }
         }
     }
