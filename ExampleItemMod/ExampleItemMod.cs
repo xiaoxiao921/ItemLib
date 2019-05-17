@@ -19,7 +19,6 @@ namespace ExampleItemMod
         public ExampleItemMod()
         {
             // retrieve your item id from the lib.
-            // if you can't find the id of your item, means your mod loaded before the lib, so call ItemLib.Initialize
 
             myCustomItemID_1 = ItemLib.ItemLib.GetItemID("Custom Item Example");
 
