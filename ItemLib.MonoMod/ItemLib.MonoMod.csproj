@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>7.3</LangVersion>
     <AssemblyName>Assembly-CSharp.ItemLib.MM</AssemblyName>
   </PropertyGroup>
 
@@ -10,23 +9,17 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>..\libs\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>..\libs\BepInEx.dll</HintPath>
-    </Reference>
     <Reference Include="ItemLib">
-      <HintPath>..\..\ItemLib\ItemLib\bin\Release\netstandard2.0\ItemLib.dll</HintPath>
+      <HintPath>..\ItemLib\bin\Debug\netstandard2.0\ItemLib.dll</HintPath>
     </Reference>
-    <Reference Include="MMHOOK_Assembly-CSharp">
-      <HintPath>..\libs\MMHOOK_Assembly-CSharp.dll</HintPath>
+    <Reference Include="MonoMod">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Risk of Rain 2\BepInEx\patchers\BepInEx.MonoMod.Loader\MonoMod.exe</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\libs\Mono.Cecil.dll</HintPath>
+    <Reference Include="UnityEngine">
+      <HintPath>..\ItemLib\bin\Release\netstandard2.0\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Security">
-      <HintPath>..\libs\Mono.Security.dll</HintPath>
-    </Reference>
-    <Reference Include="MonoMod.Utils">
-      <HintPath>..\libs\MonoMod.Utils.dll</HintPath>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\libs\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 

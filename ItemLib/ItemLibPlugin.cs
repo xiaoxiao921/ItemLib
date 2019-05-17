@@ -13,6 +13,9 @@ namespace ItemLib
 
         public ItemLibPlugin()
         {
+#if DEBUG
+            Debug.Log("[ItemLib] Debug");
+#endif
             ItemLib.Initialize();
 
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
@@ -24,43 +27,44 @@ namespace ItemLib
             };
         }
 
-        [ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer, helpText = "Give custom item")]
-        private static void customitem(ConCommandArgs args)
+        [ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer,
+            helpText = "Give custom item, id only. /custom_item 78 1")]
+        private static void Customitem(ConCommandArgs args)
         {
-
             string indexString = args.userArgs[0];
             string countString = args.userArgs[1];
 
             Inventory inventory = args.sender.master.inventory;
 
-            int itemCount = 1;
-            if (!int.TryParse(countString, out itemCount))
+            if (!int.TryParse(countString, out var itemCount))
             {
                 itemCount = 1;
             }
 
-            int itemIndex = 0;
-            ItemIndex itemType = ItemIndex.Syringe;
-            if (int.TryParse(indexString, out itemIndex))
+            if (int.TryParse(indexString, out var itemIndex))
             {
-                if (itemIndex < 100 && itemIndex >= 0) // need proper range check
+                if (itemIndex >= 0 && itemIndex < ItemLib.TotalItemCount)
                 {
-                    itemType = (ItemIndex)itemIndex;
+                    var itemType = (ItemIndex) itemIndex;
                     inventory.GiveItem(itemType, itemCount);
                 }
             }
         }
-
+#if DEBUG
         public void Update()
         {
+
             if (Input.GetKeyDown(KeyCode.F3))
             {
+                // drop every t1 items
                 var dropList = Run.instance.availableTier1DropList;
                 Debug.Log(dropList.Count);
-                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                for(int i = 0; i != dropList.Count;i++)
-                    PickupDropletController.CreatePickupDroplet(dropList[i], transform.position, transform.forward * 20f);
+                var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                for (int i = 0; i != dropList.Count; i++)
+                    PickupDropletController.CreatePickupDroplet(dropList[i], trans.position, trans.forward * 20f);
             }
+
         }
+#endif
     }
 }
