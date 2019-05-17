@@ -40,7 +40,7 @@ namespace ItemLib
             }
             private set { _customEquipmentCount = value; }
         }
-        public static int TotalEquipmentCount;
+        private static int _totalEquipmentCount;
 
         public static readonly int CoinCount = 1;
 
@@ -50,13 +50,11 @@ namespace ItemLib
         private static readonly List<ItemDef> ItemDefList = new List<ItemDef>();
         private static readonly List<EquipmentDef> EquipmentDefList = new List<EquipmentDef>();
 
-        public static IReadOnlyDictionary<string, int> ItemReferences;
+        private static IReadOnlyDictionary<string, int> _itemReferences;
 
-        private static bool loaded = false;
-
-        public static void Initialize()
+        internal static void Initialize()
         {
-            if (loaded)
+            if (_itemReferences != null)
                 return;
 
             // https://discordapp.com/channels/562704639141740588/562704639569428506/575081634898903040 ModRecalc implementation ?
@@ -65,7 +63,7 @@ namespace ItemLib
 
             GetAllCustomItemsAndEquipments();
             TotalItemCount = OriginalItemCount + CustomItemCount;
-            TotalEquipmentCount = OriginalEquipmentCount + CustomEquipmentCount;
+            _totalEquipmentCount = OriginalEquipmentCount + CustomEquipmentCount;
 
             InitCatalogHook();
 
@@ -76,17 +74,15 @@ namespace ItemLib
             defineItems.Invoke(null, null);
 
             InitHooks();
-
-            loaded = true;
         }
 
-        public static int GetItemID(string name)
+        public static int GetItemId(string name)
         {
-            if (ItemReferences == null)
+            if (_itemReferences == null)
                 Initialize();
 
             int id;
-            ItemReferences.TryGetValue(name, out id);
+            _itemReferences.TryGetValue(name, out id);
 
             return id;
         }
@@ -135,18 +131,6 @@ namespace ItemLib
             CustomEquipmentCount = EquipmentDefHashSet.Count;
         }
 
-        public static ItemDef GetItemDef(ItemIndex itemIndex)
-        {
-            int index = (int)itemIndex;
-            ItemDef[] array = (ItemDef[]) typeof(ItemCatalog)
-                .GetField("itemDefs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .GetValue(null); // reflection for each getitemdef call ? delete this 
-
-            if (index < 0 || index > TotalItemCount)
-                return null;
-            return array[index];
-        }
-
         private static void InitCatalogHook()
         {
             var tmp = new Dictionary<string, int>();
@@ -182,7 +166,7 @@ namespace ItemLib
                         tmp.Add(ItemDefList[i].nameToken , i + OriginalItemCount);
                     }
                     Debug.Log("[ItemLib] Added " + _customItemCount + " custom items");
-                    ItemReferences = new ReadOnlyDictionary<string, int>(tmp);
+                    _itemReferences = new ReadOnlyDictionary<string, int>(tmp);
                 });
             };
         }
@@ -244,6 +228,17 @@ namespace ItemLib
                 cursor.Next.Operand = TotalItemCount;
             };
 
+            IL.RoR2.ItemCatalog.GetItemDef += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalItemCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalItemCount;
+            };
+
             IL.RoR2.ItemCatalog.AllItemsEnumerator.MoveNext += il =>
             {
                 ILCursor cursor = new ILCursor(il);
@@ -284,7 +279,7 @@ namespace ItemLib
                 ILCursor cursor = new ILCursor(il);
 
                 cursor.GotoNext(
-                        i => i.MatchLdcI4(_originalItemCount)
+                        i => i.MatchLdcI4(OriginalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = _totalItemCount;
@@ -322,9 +317,9 @@ namespace ItemLib
 
             // PickupIndex : Some methods are inlined, monomod for that and reflection for some of its fields.
 
-            typeof(PickupIndex).SetFieldValue("lunarCoin1", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount));
-            typeof(PickupIndex).SetFieldValue("last", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount));
-            typeof(PickupIndex).SetFieldValue("end", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount + CoinCount));
+            typeof(PickupIndex).SetFieldValue("lunarCoin1", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount));
+            typeof(PickupIndex).SetFieldValue("last", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount));
+            typeof(PickupIndex).SetFieldValue("end", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount + CoinCount));
 
             // ItemMask
 
@@ -406,7 +401,7 @@ namespace ItemLib
                     i => i.MatchLdcI4(OriginalEquipmentCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = TotalEquipmentCount;
+                cursor.Next.Operand = _totalEquipmentCount;
             };
 
             IL.RoR2.ItemDisplayRuleSet.Reset += il =>
@@ -423,7 +418,7 @@ namespace ItemLib
                     i => i.MatchLdcI4(OriginalEquipmentCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = TotalEquipmentCount;
+                cursor.Next.Operand = _totalEquipmentCount;
             };
 
             // RuleCatalog

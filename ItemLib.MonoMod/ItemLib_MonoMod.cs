@@ -7,10 +7,9 @@ namespace RoR2
 {
     internal class patch_ItemCatalog
     {
-        public static ItemDef GetItemDef(ItemIndex itemIndex)
-        {
-            return ItemLib.ItemLib.GetItemDef(itemIndex);
-        }
+        [MonoModIgnore]
+        [NoInlining]
+        public static extern ItemDef GetItemDef(ItemIndex itemIndex);
     }
 
     [Serializable]
@@ -71,7 +70,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return Resources.Load<GameObject>(ItemLib.ItemLib.GetItemDef((ItemIndex)value).pickupModelPath);
+                    return Resources.Load<GameObject>(ItemCatalog.GetItemDef((ItemIndex)value).pickupModelPath);
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
@@ -91,7 +90,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    ItemDef itemDef = ItemLib.ItemLib.GetItemDef((ItemIndex)value);
+                    ItemDef itemDef = ItemCatalog.GetItemDef((ItemIndex)value);
                     string path = null;
                     switch (itemDef.tier)
                     {
@@ -135,7 +134,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return ColorCatalog.GetColor(ItemLib.ItemLib.GetItemDef((ItemIndex)value).colorIndex);
+                    return ColorCatalog.GetColor(ItemCatalog.GetItemDef((ItemIndex)value).colorIndex);
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
@@ -155,7 +154,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return ColorCatalog.GetColor(ItemLib.ItemLib.GetItemDef((ItemIndex)value).darkColorIndex);
+                    return ColorCatalog.GetColor(ItemCatalog.GetItemDef((ItemIndex)value).darkColorIndex);
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
@@ -175,7 +174,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return ItemLib.ItemLib.GetItemDef((ItemIndex)value).nameToken;
+                    return ItemCatalog.GetItemDef((ItemIndex)value).nameToken;
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
@@ -195,7 +194,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return ItemLib.ItemLib.GetItemDef((ItemIndex)value).unlockableName;
+                    return ItemCatalog.GetItemDef((ItemIndex)value).unlockableName;
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
@@ -211,7 +210,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return ItemLib.ItemLib.GetItemDef((ItemIndex)value).tier == ItemTier.Lunar;
+                    return ItemCatalog.GetItemDef((ItemIndex)value).tier == ItemTier.Lunar;
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
@@ -227,7 +226,7 @@ namespace RoR2
             {
                 if (value < TotalItemCount)
                 {
-                    return ItemLib.ItemLib.GetItemDef((ItemIndex)value).tier == ItemTier.Boss;
+                    return ItemCatalog.GetItemDef((ItemIndex)value).tier == ItemTier.Boss;
                 }
                 if (value < TotalItemCount + TotalEquipmentCount)
                 {
