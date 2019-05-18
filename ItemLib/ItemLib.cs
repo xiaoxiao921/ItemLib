@@ -44,22 +44,22 @@ namespace ItemLib
 
         public static readonly int CoinCount = 1;
 
-        private static readonly HashSet<MethodInfo> ItemDefHashSet = new HashSet<MethodInfo>();
-        private static readonly HashSet<MethodInfo> EquipmentDefHashSet = new HashSet<MethodInfo>();
+        private static readonly HashSet<MethodInfo> CustomItemHashSet = new HashSet<MethodInfo>();
+        private static readonly HashSet<MethodInfo> CustomEquipmentHashSet = new HashSet<MethodInfo>();
 
-        private static readonly List<ItemDef> ItemDefList = new List<ItemDef>();
-        private static readonly List<EquipmentDef> EquipmentDefList = new List<EquipmentDef>();
+        public static readonly List<CustomItem> CustomItemList = new List<CustomItem>();
+        public static readonly List<CustomEquipment> CustomEquipmentList = new List<CustomEquipment>();
 
-        private static IReadOnlyDictionary<string, int> _itemReferences;
+        public static IReadOnlyDictionary<string, int> _itemReferences;
+        public static IReadOnlyDictionary<string, int> _equipmentReferences;
 
         internal static void Initialize()
         {
-            if (_itemReferences != null)
-                return;
-
             // https://discordapp.com/channels/562704639141740588/562704639569428506/575081634898903040 ModRecalc implementation ?
 
-            // mod order kind of matters : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary they should call this method.
+            // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called.
+
+            Debug.Log("[ItemLib] Initializing");
 
             GetAllCustomItemsAndEquipments();
             TotalItemCount = OriginalItemCount + CustomItemCount;
@@ -81,20 +81,35 @@ namespace ItemLib
             if (_itemReferences == null)
                 Initialize();
 
-            int id;
-            _itemReferences.TryGetValue(name, out id);
+            _itemReferences.TryGetValue(name, out var id);
+
+            return id;
+        }
+
+        public static int GetEquipmentId(string name)
+        {
+            if (_equipmentReferences == null)
+                Initialize();
+
+            _equipmentReferences.TryGetValue(name, out var id);
 
             return id;
         }
 
         public static void GetAllCustomItemsAndEquipments()
         {
+            if (_customItemCount != 0 || _customEquipmentCount != 0)
+                return;
+
             List<Assembly> allAssemblies = new List<Assembly>();
+
             string path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            foreach (string dll in Directory.GetFiles(path, "*.dll"))
-                allAssemblies.Add(Assembly.LoadFile(dll));
-
+            foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
+            {
+                if (!dll.Contains("R2API"))
+                    allAssemblies.Add(Assembly.LoadFile(dll));
+            }
             foreach (Assembly assembly in allAssemblies)
             {
                 Type[] types = assembly.GetTypes();
@@ -107,28 +122,28 @@ namespace ItemLib
                         foreach (var attribute in customAttributes.OfType<ItemAttribute>())
                         {
                             if(attribute.Type == ItemAttribute.ItemType.Item)
-                                ItemDefHashSet.Add(methodInfo);
+                                CustomItemHashSet.Add(methodInfo);
                             else
                             {
-                                EquipmentDefHashSet.Add(methodInfo);
+                                CustomEquipmentHashSet.Add(methodInfo);
                             }
                         }
                     }
                 }
             }
 
-            foreach (MethodInfo mi in ItemDefHashSet)
+            foreach (MethodInfo mi in CustomItemHashSet)
             {
-                ItemDefList.Add((ItemDef)mi.Invoke(null, null)); // Mods should return an itemDef so we can load it.
+                CustomItemList.Add((CustomItem)mi.Invoke(null, null));
             }
 
-            foreach (MethodInfo mi in EquipmentDefHashSet)
+            foreach (MethodInfo mi in CustomEquipmentHashSet)
             {
-                EquipmentDefList.Add((EquipmentDef)mi.Invoke(null, null));
+                CustomEquipmentList.Add((CustomEquipment)mi.Invoke(null, null));
             }
 
-            CustomItemCount = ItemDefHashSet.Count;
-            CustomEquipmentCount = EquipmentDefHashSet.Count;
+            _customItemCount = CustomItemHashSet.Count;
+            _customEquipmentCount = CustomEquipmentHashSet.Count;
         }
 
         private static void InitCatalogHook()
@@ -159,11 +174,11 @@ namespace ItemLib
                     for (int i = 0; i < CustomItemCount; i++)
                     {
                         MethodInfo registerItem = typeof(ItemCatalog).GetMethod("RegisterItem", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                        object[] para = { (ItemIndex)(i + OriginalItemCount), ItemDefList[i] };
+                        object[] para = { (ItemIndex)(i + OriginalItemCount), CustomItemList[i].ItemDef };
                         registerItem.Invoke(null, para);
                         //Debug.Log("adding custom item at index : " + (i + OriginalItemCount));
 
-                        tmp.Add(ItemDefList[i].nameToken , i + OriginalItemCount);
+                        tmp.Add(CustomItemList[i].ItemDef.nameToken , i + OriginalItemCount);
                     }
                     Debug.Log("[ItemLib] Added " + _customItemCount + " custom items");
                     _itemReferences = new ReadOnlyDictionary<string, int>(tmp);
@@ -475,23 +490,210 @@ namespace ItemLib
                     Array.Copy(sourceArray, array, array.Length);
                 };
             };
+
+            IL.RoR2.Orbs.ItemTakenOrbEffect.Start += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                var id = 0;
+
+                cursor.GotoNext(
+                    i => i.MatchStloc(0)
+                );
+
+                cursor.EmitDelegate<Func<ItemDef, ItemDef>>((itemDef) =>
+                {
+                    id = (int)itemDef.itemIndex;
+                    return itemDef;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchLdloc(0),
+                    i => i.MatchCallvirt<ItemDef>("get_pickupIconSprite"),
+                    i => i.MatchStloc(2)
+                );
+                cursor.Index += 2;
+
+                cursor.EmitDelegate<Func<Sprite, Sprite>>((sprite) =>
+                {
+                    // check if the item has a custom sprite.
+                    if (id != 0)
+                    {
+                        var itemName = _itemReferences.FirstOrDefault(x => x.Value == id).Key;
+
+                        if (itemName != null)
+                        {
+                            CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(itemName));
+                            if (currentCustomItem != null && currentCustomItem.Icon != null)
+                            {
+                                return (Sprite)currentCustomItem.Icon;
+                            }
+                        }
+                    }
+
+                    return sprite;
+                });
+            };
+
+            IL.RoR2.UI.RuleChoiceController.SetChoice += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                string name = null;
+
+                cursor.GotoNext(
+                    i => i.MatchLdarg(0),
+                    i => i.MatchLdarg(1)
+                );
+                cursor.Index++;
+
+                cursor.EmitDelegate<Func<RuleChoiceDef, RuleChoiceDef>>((ruleChoiceDef) =>
+                {
+                    name = ruleChoiceDef.tooltipNameToken;
+                    return ruleChoiceDef;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchLdfld("RoR2.RuleChoiceDef", "spritePath")
+                );
+
+                if (name != null)
+                {
+                    CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                    if (currentCustomItem != null)
+                    {
+                        cursor.Index -= 2;
+                        cursor.RemoveRange(3);
+                        cursor.Index++;
+                    }
+                }
+
+                cursor.EmitDelegate<Func<Sprite, Sprite>>((sprite) =>
+                {
+                    if (name != null)
+                    {
+                        CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                        if (currentCustomItem != null && currentCustomItem.Icon != null)
+                        {
+                            return (Sprite) currentCustomItem.Icon;
+                        }
+                    }
+
+                    return sprite;
+                });
+            };
+
+            IL.RoR2.UI.GenericNotification.SetItem += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                string name = null;
+
+                cursor.GotoNext(
+                    i => i.MatchLdfld("RoR2.ItemDef", "nameToken")
+                );
+                cursor.Index++;
+
+                cursor.EmitDelegate<Func<string, string>>((nameToken) =>
+                {
+                    name = nameToken;
+                    return nameToken;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchLdfld("RoR2.UI.GenericNotification", "iconImage")
+                );
+
+                if (name != null)
+                {
+                    CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                    if (currentCustomItem != null)
+                    {
+                        cursor.Index++;
+                        cursor.RemoveRange(2);
+                        cursor.Index++;
+                    }
+                }
+
+                cursor.EmitDelegate<Func<Texture, Texture>>((texture) =>
+                {
+                    if (name != null)
+                    {
+                        CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                        if (currentCustomItem != null && currentCustomItem.Icon != null)
+                        {
+                            return (Texture)currentCustomItem.Icon;
+                        }
+                    }
+
+                    return texture;
+                });
+            };
+
+            IL.RoR2.UI.ItemIcon.SetItemIndex += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                string name = null;
+
+                cursor.GotoNext(
+                    i => i.MatchLdfld("RoR2.UI.ItemIcon", "itemIndex"),
+                    i => i.MatchCall("RoR2.ItemCatalog", "GetItemDef")
+                );
+                cursor.Index += 2;
+
+                cursor.EmitDelegate<Func<ItemDef, ItemDef>>((itemDef) =>
+                {
+                    name = itemDef.nameToken;
+                    return itemDef;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchLdloc(4),
+                    i => i.MatchLdfld("RoR2.ItemDef", "pickupIconPath")
+                );
+
+                if (name != null)
+                {
+                    CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                    if (currentCustomItem != null)
+                    {
+                        cursor.Index--;
+                        cursor.RemoveRange(2);
+                        cursor.Index++;
+                    }
+                }
+
+                cursor.EmitDelegate<Func<Texture, Texture>>((texture) =>
+                {
+                    if (name != null)
+                    {
+                        CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                        if (currentCustomItem != null && currentCustomItem.Icon != null)
+                        {
+                            return (Texture)currentCustomItem.Icon;
+                        }
+                    }
+
+                    return texture;
+                });
+            };
+
+
         }
 #if DEBUG
-        [Item(ItemAttribute.ItemType.Item)]
-        public static ItemDef Test()
+        /*[Item(ItemAttribute.ItemType.Item)]
+        public static CustomItem Test()
         {
             ItemDef newItemDef = new ItemDef
             {
                 tier = ItemTier.Tier1,
-                pickupModelPath = "Prefabs/PickupModels/PickupWolfPelt",
-                pickupIconPath = "Textures/ItemIcons/texWolfPeltIcon",
-                nameToken = "AAAAAAAAAAAAAA",
-                pickupToken = "PFGHKOPFGHKPOH",
-                descriptionToken = "LETS GO",
+                pickupModelPath = "", // leave it empty and give directly the prefab / icon on the return but you can also use an already made prefab by putting a path in there.
+                pickupIconPath = "",
+                nameToken = "Item ItemLib DEBUG",
+                pickupToken = "",
+                descriptionToken = "yes",
                 addressToken = ""
             };
-            return newItemDef;
-        }
+
+            return new CustomItem(newItemDef, null, null);
+        }*/
 #endif
     }
 }

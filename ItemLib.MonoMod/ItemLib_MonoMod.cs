@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using ItemLib;
 using MonoMod;
 using UnityEngine;
 
@@ -66,6 +68,19 @@ namespace RoR2
 
         public GameObject GetPickupDisplayPrefab()
         {
+            // Check if the custom item has a custom prefab.
+            var l_value = value;
+            var itemName = ItemLib.ItemLib._itemReferences.FirstOrDefault(x => x.Value == l_value).Key;
+
+            if (itemName != null)
+            {
+                CustomItem currentCustomItem = ItemLib.ItemLib.CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(itemName));
+                if (currentCustomItem != null && currentCustomItem.Prefab != null)
+                {
+                    return currentCustomItem.Prefab;
+                }
+            }
+
             if (value >= 0)
             {
                 if (value < TotalItemCount)

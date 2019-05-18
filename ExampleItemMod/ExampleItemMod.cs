@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using BepInEx;
 using ItemLib;
 using RoR2;
@@ -14,19 +15,25 @@ namespace ExampleItemMod
         private const string ModName = "ExampleItemMod";
         private const string ModGuid = "dev.iDeathHD.ExampleItemMod";
 
-        private static int _myCustomItemId1;
+        private static int _myCustomItemId;
+
+        private static GameObject _prefab;
+        private static Object _icon; 
+        // icon will be loaded as either a Sprite or Texture later on
+        // need multimod for custom prefab / icon, see how the ExampleMod looks like at
+        // https://github.com/risk-of-thunder/MultiMod/blob/master/ExampleMod/Assets/ExampleMod/ExampleMod.cs
 
         public ExampleItemMod()
         {
             // retrieve your item id from the lib.
 
-            _myCustomItemId1 = ItemLib.ItemLib.GetItemId("Custom Item Example");
+            _myCustomItemId = ItemLib.ItemLib.GetItemId("Custom Item Example");
 
             On.RoR2.CharacterBody.OnKilledOther += (orig, self, damageReport) =>
             {
                 orig(self, damageReport);
 
-                if (self.inventory.GetItemCount((ItemIndex) _myCustomItemId1) > 0)
+                if (self.inventory.GetItemCount((ItemIndex) _myCustomItemId) > 0)
                 {
                     DetonateAlive(100);
                 }
@@ -53,19 +60,20 @@ namespace ExampleItemMod
         }
 
         [Item(ItemAttribute.ItemType.Item)]
-        public static ItemDef Test()
+        public static ItemLib.CustomItem Test()
         {
             ItemDef newItemDef = new ItemDef
             {
                 tier = ItemTier.Tier1,
-                pickupModelPath = "Prefabs/PickupModels/PickupWolfPelt",
-                pickupIconPath = "Textures/ItemIcons/texWolfPeltIcon",
+                pickupModelPath = "", // leave it empty and give directly the prefab / icon on the return but you can also use an already made prefab by putting a path in there.
+                pickupIconPath = "",
                 nameToken = "Custom Item Example",
                 pickupToken = "i'm a custom item. i do sticky bomb on kill",
                 descriptionToken = "yes",
                 addressToken = ""
             };
-            return newItemDef;
+
+            return new CustomItem(newItemDef, _prefab, _icon);
         }
     }
 }

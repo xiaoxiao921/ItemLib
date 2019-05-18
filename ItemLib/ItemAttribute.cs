@@ -1,8 +1,9 @@
 ﻿using System;
+using UnityEngine;
 
 namespace ItemLib
 {
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class ItemAttribute : Attribute
     {
         public enum ItemType
@@ -11,11 +12,12 @@ namespace ItemLib
             Equipment
         }
 
-        public ItemType Type;
+        public readonly ItemType Type;
+
         /// <param name="type"> Type.Item or Type.Equipment.</param>
         public ItemAttribute(ItemType type)
         {
-            this.Type = type;
+            Type = type;
         }
     }
 }

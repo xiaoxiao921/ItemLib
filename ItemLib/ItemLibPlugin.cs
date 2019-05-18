@@ -16,8 +16,6 @@ namespace ItemLib
 #if DEBUG
             Debug.Log("[ItemLib] Debug");
 #endif
-            ItemLib.Initialize();
-
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
 
             On.RoR2.Console.Awake += (orig, self) =>
@@ -56,7 +54,7 @@ namespace ItemLib
 
             if (Input.GetKeyDown(KeyCode.F3))
             {
-                // drop every t1 items
+                // drop every t1 items. for trying prefabs pickup.
                 var dropList = Run.instance.availableTier1DropList;
                 Debug.Log(dropList.Count);
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;

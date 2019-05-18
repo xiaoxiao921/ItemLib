@@ -11,6 +11,5 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)CommandHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Reflection.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MethodHelper.cs" />
   </ItemGroup>
 </Project>
