@@ -26,13 +26,13 @@
       <HintPath>..\libs\MonoMod.Utils.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>bin\Release\netstandard2.0\UnityEngine.dll</HintPath>
+      <HintPath>..\libs\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\libs\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Networking">
-      <HintPath>bin\Release\netstandard2.0\UnityEngine.Networking.dll</HintPath>
+      <HintPath>..\libs\UnityEngine.Networking.dll</HintPath>
     </Reference>
   </ItemGroup>
 
