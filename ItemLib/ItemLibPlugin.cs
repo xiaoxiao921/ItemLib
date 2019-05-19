@@ -16,6 +16,8 @@ namespace ItemLib
 #if DEBUG
             Debug.Log("[ItemLib] Debug");
 #endif
+            ItemLib.Initialize();
+
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
 
             On.RoR2.Console.Awake += (orig, self) =>
@@ -58,8 +60,8 @@ namespace ItemLib
                 var dropList = Run.instance.availableTier1DropList;
                 Debug.Log(dropList.Count);
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                for (int i = 0; i != dropList.Count; i++)
-                    PickupDropletController.CreatePickupDroplet(dropList[i], trans.position, trans.forward * 20f);
+                //for (int i = 0; i != dropList.Count; i++)
+                    PickupDropletController.CreatePickupDroplet(dropList[0], trans.position, trans.forward * 20f);
             }
 
         }

@@ -53,8 +53,13 @@ namespace ItemLib
         public static IReadOnlyDictionary<string, int> _itemReferences;
         public static IReadOnlyDictionary<string, int> _equipmentReferences;
 
+        public static bool Initialized;
+
         internal static void Initialize()
         {
+            if (Initialized)
+                return;
+
             // https://discordapp.com/channels/562704639141740588/562704639569428506/575081634898903040 ModRecalc implementation ?
 
             // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called.
@@ -74,11 +79,13 @@ namespace ItemLib
             defineItems.Invoke(null, null);
 
             InitHooks();
+
+            Initialized = true;
         }
 
         public static int GetItemId(string name)
         {
-            if (_itemReferences == null)
+            if (!Initialized)
                 Initialize();
 
             _itemReferences.TryGetValue(name, out var id);
@@ -88,7 +95,7 @@ namespace ItemLib
 
         public static int GetEquipmentId(string name)
         {
-            if (_equipmentReferences == null)
+            if (!Initialized)
                 Initialize();
 
             _equipmentReferences.TryGetValue(name, out var id);
@@ -335,6 +342,7 @@ namespace ItemLib
             typeof(PickupIndex).SetFieldValue("lunarCoin1", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount));
             typeof(PickupIndex).SetFieldValue("last", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount));
             typeof(PickupIndex).SetFieldValue("end", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount + CoinCount));
+            typeof(PickupIndex).SetFieldValue("none", new PickupIndex((ItemIndex)(-1))); // this is real fucking fuckery fuck.
 
             // ItemMask
 
