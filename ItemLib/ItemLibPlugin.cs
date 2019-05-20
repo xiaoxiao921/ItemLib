@@ -53,17 +53,15 @@ namespace ItemLib
 #if DEBUG
         public void Update()
         {
-
             if (Input.GetKeyDown(KeyCode.F3))
             {
                 // drop every t1 items. for trying prefabs pickup.
-                var dropList = Run.instance.availableTier1DropList;
+                var dropList = Run.instance.availableTier3DropList;
                 Debug.Log(dropList.Count);
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                //for (int i = 0; i != dropList.Count; i++)
-                    PickupDropletController.CreatePickupDroplet(dropList[0], trans.position, trans.forward * 20f);
+                for (int i = 0; i != dropList.Count; i++)
+                    PickupDropletController.CreatePickupDroplet(dropList[i], trans.position, trans.forward * 20f);
             }
-
         }
 #endif
     }

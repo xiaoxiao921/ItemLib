@@ -9,6 +9,8 @@ using RoR2;
 using UnityEngine;
 using RoR2.Stats;
 using Mono.Cecil.Cil;
+using RoR2.Orbs;
+using RoR2.UI;
 
 namespace ItemLib
 {
@@ -503,10 +505,14 @@ namespace ItemLib
             {
                 ILCursor cursor = new ILCursor(il);
                 var id = 0;
+                Sprite instance = null;
 
                 cursor.GotoNext(
+                    i => i.MatchCall("RoR2.ItemCatalog", "GetItemDef"),
                     i => i.MatchStloc(0)
                 );
+
+                cursor.Index++;
 
                 cursor.EmitDelegate<Func<ItemDef, ItemDef>>((itemDef) =>
                 {
@@ -515,15 +521,27 @@ namespace ItemLib
                 });
 
                 cursor.GotoNext(
-                    i => i.MatchLdloc(0),
-                    i => i.MatchCallvirt<ItemDef>("get_pickupIconSprite"),
+                    i => i.MatchLdnull(),
                     i => i.MatchStloc(2)
                 );
+
                 cursor.Index += 2;
 
-                cursor.EmitDelegate<Func<Sprite, Sprite>>((sprite) =>
+                cursor.Emit(OpCodes.Ldloc_2);
+
+                cursor.EmitDelegate<Action<Sprite>>((sprite) =>
                 {
-                    // check if the item has a custom sprite.
+                    instance = sprite;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchCallvirt("RoR2.ItemDef", "get_pickupIconSprite")
+                );
+
+                cursor.Index += 2;
+
+                cursor.EmitDelegate<Action>(() =>
+                {
                     if (id != 0)
                     {
                         var itemName = _itemReferences.FirstOrDefault(x => x.Value == id).Key;
@@ -533,12 +551,11 @@ namespace ItemLib
                             CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(itemName));
                             if (currentCustomItem != null && currentCustomItem.Icon != null)
                             {
-                                return (Sprite)currentCustomItem.Icon;
+                                if (instance != null)
+                                    instance = (Sprite)currentCustomItem.Icon;
                             }
                         }
                     }
-
-                    return sprite;
                 });
             };
 
@@ -546,6 +563,14 @@ namespace ItemLib
             {
                 ILCursor cursor = new ILCursor(il);
                 string name = null;
+                RuleChoiceController instance = null;
+
+                cursor.Emit(OpCodes.Ldarg_0);
+
+                cursor.EmitDelegate<Action<RuleChoiceController>>((self) =>
+                {
+                    instance = self;
+                });
 
                 cursor.GotoNext(
                     i => i.MatchLdarg(0),
@@ -560,32 +585,23 @@ namespace ItemLib
                 });
 
                 cursor.GotoNext(
-                    i => i.MatchLdfld("RoR2.RuleChoiceDef", "spritePath")
+                    i => i.MatchCall("UnityEngine.Resources", "Load"),
+                    i => i.MatchCallvirt("UnityEngine.UI.Image", "set_sprite")
                 );
 
-                if (name != null)
-                {
-                    CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
-                    if (currentCustomItem != null)
-                    {
-                        cursor.Index -= 2;
-                        cursor.RemoveRange(3);
-                        cursor.Index++;
-                    }
-                }
+                cursor.Index += 2;
 
-                cursor.EmitDelegate<Func<Sprite, Sprite>>((sprite) =>
+                cursor.EmitDelegate<Action>(() =>
                 {
                     if (name != null)
                     {
                         CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
                         if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
-                            return (Sprite) currentCustomItem.Icon;
+                            if (instance != null)
+                                instance.image.sprite = (Sprite)currentCustomItem.Icon;
                         }
                     }
-
-                    return sprite;
                 });
             };
 
@@ -593,6 +609,14 @@ namespace ItemLib
             {
                 ILCursor cursor = new ILCursor(il);
                 string name = null;
+                GenericNotification instance = null;
+
+                cursor.Emit(OpCodes.Ldarg_0);
+
+                cursor.EmitDelegate<Action<GenericNotification>>((self) =>
+                {
+                    instance = self;
+                });
 
                 cursor.GotoNext(
                     i => i.MatchLdfld("RoR2.ItemDef", "nameToken")
@@ -606,32 +630,23 @@ namespace ItemLib
                 });
 
                 cursor.GotoNext(
-                    i => i.MatchLdfld("RoR2.UI.GenericNotification", "iconImage")
+                    i => i.MatchCall("UnityEngine.Resources", "Load"),
+                    i => i.MatchCallvirt("UnityEngine.UI.RawImage", "set_texture")
                 );
 
-                if (name != null)
-                {
-                    CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
-                    if (currentCustomItem != null)
-                    {
-                        cursor.Index++;
-                        cursor.RemoveRange(2);
-                        cursor.Index++;
-                    }
-                }
+                cursor.Index += 2;
 
-                cursor.EmitDelegate<Func<Texture, Texture>>((texture) =>
+                cursor.EmitDelegate<Action>(() =>
                 {
                     if (name != null)
                     {
                         CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
                         if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
-                            return (Texture)currentCustomItem.Icon;
+                            if (instance != null)
+                                instance.iconImage.texture = (Texture)currentCustomItem.Icon;
                         }
                     }
-
-                    return texture;
                 });
             };
 
@@ -639,6 +654,14 @@ namespace ItemLib
             {
                 ILCursor cursor = new ILCursor(il);
                 string name = null;
+                ItemIcon instance = null;
+
+                cursor.Emit(OpCodes.Ldarg_0);
+
+                cursor.EmitDelegate<Action<ItemIcon>>((self) =>
+                {
+                    instance = self;
+                });
 
                 cursor.GotoNext(
                     i => i.MatchLdfld("RoR2.UI.ItemIcon", "itemIndex"),
@@ -653,33 +676,23 @@ namespace ItemLib
                 });
 
                 cursor.GotoNext(
-                    i => i.MatchLdloc(4),
-                    i => i.MatchLdfld("RoR2.ItemDef", "pickupIconPath")
+                    i => i.MatchCall("UnityEngine.Resources", "Load"),
+                    i => i.MatchCallvirt("UnityEngine.UI.RawImage", "set_texture")
                 );
 
-                if (name != null)
-                {
-                    CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
-                    if (currentCustomItem != null)
-                    {
-                        cursor.Index--;
-                        cursor.RemoveRange(2);
-                        cursor.Index++;
-                    }
-                }
+                cursor.Index += 2;
 
-                cursor.EmitDelegate<Func<Texture, Texture>>((texture) =>
+                cursor.EmitDelegate<Action>(() =>
                 {
                     if (name != null)
                     {
                         CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
                         if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
-                            return (Texture)currentCustomItem.Icon;
+                            if (instance != null)
+                                instance.image.texture = (Texture)currentCustomItem.Icon;
                         }
                     }
-
-                    return texture;
                 });
             };
 

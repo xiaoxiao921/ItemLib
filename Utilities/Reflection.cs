@@ -64,26 +64,26 @@ public static class Reflection
 
     #region Method
 
-    public static TReturn InvokeMethod<TReturn>(this object instance, string methodName, params object[] methodParams) =>
+    public static TReturn InvokeMethod_<TReturn>(this object instance, string methodName, params object[] methodParams) =>
         (TReturn)instance.GetType()
                          .GetMethod(methodName, _defaultFlags | BindingFlags.Instance)
                          .Invoke(instance, methodParams);
 
-    public static TReturn InvokeMethod<TClass, TReturn>(string methodName, params object[] methodParams) =>
-        InvokeMethod<TReturn>(typeof(TClass), methodName, methodParams);
+    public static TReturn InvokeMethod_<TClass, TReturn>(string methodName, params object[] methodParams) =>
+        InvokeMethod_<TReturn>(typeof(TClass), methodName, methodParams);
 
-    public static TReturn InvokeMethod<TReturn>(this Type type, string methodName, params object[] methodParams) =>
+    public static TReturn InvokeMethod_<TReturn>(this Type type, string methodName, params object[] methodParams) =>
         (TReturn)type.GetMethod(methodName, _defaultFlags | BindingFlags.Static)
                      .Invoke(null, methodParams);
 
-    public static void InvokeMethod(this object instance, string methodName, params object[] methodParams) =>
-        instance.InvokeMethod<object>(methodName, methodParams);
+    public static void InvokeMethod_(this object instance, string methodName, params object[] methodParams) =>
+        instance.InvokeMethod_<object>(methodName, methodParams);
 
-    public static void InvokeMethod<TClass>(string methodName, params object[] methodParams) =>
-        InvokeMethod<TClass, object>(methodName, methodParams);
+    public static void InvokeMethod_<TClass>(string methodName, params object[] methodParams) =>
+        InvokeMethod_<TClass, object>(methodName, methodParams);
 
-    public static void InvokeMethod(this Type type, string methodName, params object[] methodParams) =>
-        InvokeMethod<object>(methodName, methodParams);
+    public static void InvokeMethod_(this Type type, string methodName, params object[] methodParams) =>
+        InvokeMethod_<object>(methodName, methodParams);
     #endregion
 
     #region Class

@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
+using System.Reflection;
 using BepInEx;
 using ItemLib;
 using RoR2;
@@ -17,16 +17,13 @@ namespace ExampleItemMod
 
         private static int _myCustomItemId;
 
+        private static AssetBundle _exampleAssetBundle;
         private static GameObject _prefab;
-        private static Object _icon; 
-        // icon will be loaded as either a Sprite or Texture later on
-        // need multimod for custom prefab / icon, see how the ExampleMod looks like at
-        // https://github.com/risk-of-thunder/MultiMod/blob/master/ExampleMod/Assets/ExampleMod/ExampleMod.cs
+        private static Object _icon;
 
         public ExampleItemMod()
         {
             // retrieve your item id from the lib.
-
             _myCustomItemId = ItemLib.ItemLib.GetItemId("Custom Item Example");
 
             On.RoR2.CharacterBody.OnKilledOther += (orig, self, damageReport) =>
@@ -62,6 +59,13 @@ namespace ExampleItemMod
         [Item(ItemAttribute.ItemType.Item)]
         public static ItemLib.CustomItem Test()
         {
+            // Load the AssetBundle you made with the Unity Editor
+
+            _exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/exampleitemmod");
+
+            _prefab = _exampleAssetBundle.LoadAsset<GameObject>("Assets/Import/belt/belt.prefab");
+            _icon = _exampleAssetBundle.LoadAsset<Object>("Assets/Import/belt_icon/belt_icon.png");
+
             ItemDef newItemDef = new ItemDef
             {
                 tier = ItemTier.Tier1,
