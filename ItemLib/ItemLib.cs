@@ -609,13 +609,9 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };
 
-            List<RuleDef> allRuleDefs = (List<RuleDef>) typeof(RuleCatalog)
-                .GetField("allRuleDefs", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .GetValue(null);
-            for (int i = OriginalItemCount; i < TotalItemCount; i++)
-                allRuleDefs.Add(RuleDef.FromItem((ItemIndex)i));
-            for (int j = OriginalEquipmentCount; j < TotalEquipmentCount; j++)
-                allRuleDefs.Add(RuleDef.FromEquipment((EquipmentIndex)j));
+            // this is good shit
+            ConstructorInfo ruleCatalogcctor = typeof(RuleCatalog).TypeInitializer;
+            ruleCatalogcctor.Invoke(null, null);
 
             // bug UserProfile
 

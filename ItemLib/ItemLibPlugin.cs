@@ -55,8 +55,8 @@ namespace ItemLib
         {
             if (Input.GetKeyDown(KeyCode.F3))
             {
-                var dropList = Run.instance.availableEquipmentDropList;
-                //var dropList = Run.instance.availableTier3DropList;
+                //var dropList = Run.instance.availableEquipmentDropList;
+                var dropList = Run.instance.availableTier3DropList;
                 Debug.Log(dropList.Count);
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
                 for (int i = 0; i != dropList.Count; i++)
