@@ -14,6 +14,13 @@ namespace RoR2
         public static extern ItemDef GetItemDef(ItemIndex itemIndex);
     }
 
+    internal class patch_EquipmentCatalog
+    {
+        [MonoModIgnore]
+        [NoInlining]
+        public static extern EquipmentDef GetEquipmentDef(EquipmentIndex equipmentIndex);
+    }
+
     [Serializable]
     internal struct patch_PickupIndex
     {
@@ -69,15 +76,24 @@ namespace RoR2
         public GameObject GetPickupDisplayPrefab()
         {
             // Check if the custom item has a custom prefab.
+            
             var l_value = value;
             var itemName = ItemLib.ItemLib._itemReferences.FirstOrDefault(x => x.Value == l_value).Key;
-
-            if (itemName != null)
             {
                 CustomItem currentCustomItem = ItemLib.ItemLib.CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(itemName));
                 if (currentCustomItem != null && currentCustomItem.Prefab != null)
                 {
                     return currentCustomItem.Prefab;
+                }
+            }
+
+            itemName = ItemLib.ItemLib._equipmentReferences.FirstOrDefault(x => x.Value == l_value).Key;
+            if (itemName != null)
+            {
+                CustomEquipment currentCustomEquipment = ItemLib.ItemLib.CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(itemName));
+                if (currentCustomEquipment != null && currentCustomEquipment.Prefab != null)
+                {
+                    return currentCustomEquipment.Prefab;
                 }
             }
 

@@ -7,7 +7,7 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        private const string ModVer = "0.0.1";
+        private const string ModVer = "0.0.3";
         private const string ModName = "ItemLib";
         private const string ModGuid = "dev.iDeathHD.ItemLib";
 
@@ -55,8 +55,8 @@ namespace ItemLib
         {
             if (Input.GetKeyDown(KeyCode.F3))
             {
-                // drop every t1 items. for trying prefabs pickup.
-                var dropList = Run.instance.availableTier3DropList;
+                var dropList = Run.instance.availableEquipmentDropList;
+                //var dropList = Run.instance.availableTier3DropList;
                 Debug.Log(dropList.Count);
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
                 for (int i = 0; i != dropList.Count; i++)

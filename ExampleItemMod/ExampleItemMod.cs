@@ -23,17 +23,20 @@ namespace ExampleItemMod
 
         public ExampleItemMod()
         {
-            // retrieve your item id from the lib.
-            _myCustomItemId = ItemLib.ItemLib.GetItemId("Custom Item Example");
+            _myCustomItemId = ItemLib.ItemLib.GetEquipmentId("Custom Equipment Example");
 
-            On.RoR2.CharacterBody.OnKilledOther += (orig, self, damageReport) =>
+            // Need to hook in here so the item actually proc, the orig method is a switch case on the equipmentIndex
+
+            On.RoR2.EquipmentSlot.PerformEquipmentAction += (orig, self, equipmentIndex) =>
             {
-                orig(self, damageReport);
-
-                if (self.inventory.GetItemCount((ItemIndex) _myCustomItemId) > 0)
+                Debug.Log((int)equipmentIndex);
+                Debug.Log((int)_myCustomItemId);
+                if ((int) equipmentIndex == _myCustomItemId)
                 {
                     DetonateAlive(100);
+                    return true; // must
                 }
+                return orig(self, equipmentIndex); // must
             };
         }
 
@@ -56,28 +59,30 @@ namespace ExampleItemMod
             }
         }
 
-        [Item(ItemAttribute.ItemType.Item)]
-        public static ItemLib.CustomItem Test()
+        [Item(ItemAttribute.ItemType.Equipment)]
+        public static ItemLib.CustomEquipment Test()
         {
             // Load the AssetBundle you made with the Unity Editor
 
-            _exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/exampleitemmod");
+            _exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/Rampage_data");
 
             _prefab = _exampleAssetBundle.LoadAsset<GameObject>("Assets/Import/belt/belt.prefab");
             _icon = _exampleAssetBundle.LoadAsset<Object>("Assets/Import/belt_icon/belt_icon.png");
 
-            ItemDef newItemDef = new ItemDef
+            EquipmentDef newEquipmentDef = new EquipmentDef
             {
-                tier = ItemTier.Tier1,
-                pickupModelPath = "", // leave it empty and give directly the prefab / icon on the return but you can also use an already made prefab by putting a path in there.
+                cooldown = 45f,
+                pickupModelPath = "",
                 pickupIconPath = "",
-                nameToken = "Custom Item Example",
-                pickupToken = "i'm a custom item. i do sticky bomb on kill",
-                descriptionToken = "yes",
-                addressToken = ""
+                nameToken = "Custom Equipment Example",
+                pickupToken = "pickup sample text",
+                descriptionToken = "description in logbook",
+                addressToken = "",
+                canDrop = true,
+                enigmaCompatible = true
             };
 
-            return new CustomItem(newItemDef, _prefab, _icon);
+            return new CustomEquipment(newEquipmentDef, _prefab, _icon);
         }
     }
 }

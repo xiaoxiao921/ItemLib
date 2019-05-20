@@ -42,7 +42,7 @@ namespace ItemLib
             }
             private set { _customEquipmentCount = value; }
         }
-        private static int _totalEquipmentCount;
+        public static int TotalEquipmentCount;
 
         public static readonly int CoinCount = 1;
 
@@ -70,7 +70,7 @@ namespace ItemLib
 
             GetAllCustomItemsAndEquipments();
             TotalItemCount = OriginalItemCount + CustomItemCount;
-            _totalEquipmentCount = OriginalEquipmentCount + CustomEquipmentCount;
+            TotalEquipmentCount = OriginalEquipmentCount + CustomEquipmentCount;
 
             InitCatalogHook();
 
@@ -79,6 +79,10 @@ namespace ItemLib
 
             MethodInfo defineItems = typeof(ItemCatalog).GetMethod("DefineItems", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             defineItems.Invoke(null, null);
+
+            // real scary stuff
+            ConstructorInfo defineEquipments = typeof(EquipmentCatalog).TypeInitializer;
+            defineEquipments.Invoke(null, null);
 
             InitHooks();
 
@@ -102,7 +106,7 @@ namespace ItemLib
 
             _equipmentReferences.TryGetValue(name, out var id);
 
-            return id;
+            return id - TotalItemCount;
         }
 
         public static void GetAllCustomItemsAndEquipments()
@@ -158,6 +162,7 @@ namespace ItemLib
         private static void InitCatalogHook()
         {
             var tmp = new Dictionary<string, int>();
+            var tmp2 = new Dictionary<string, int>();
 
             // Make it so itemDefs is large enough for all the new items.
             IL.RoR2.ItemCatalog.DefineItems += il =>
@@ -191,6 +196,42 @@ namespace ItemLib
                     }
                     Debug.Log("[ItemLib] Added " + _customItemCount + " custom items");
                     _itemReferences = new ReadOnlyDictionary<string, int>(tmp);
+                });
+            };
+
+
+
+            //  same for equipments.
+            IL.RoR2.EquipmentCatalog.cctor += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(0),
+                    i => i.MatchStloc(0)
+                );
+                cursor.Index++;
+
+                cursor.EmitDelegate<Action>(() =>
+                {
+                    // Register the items into the game and update equipmentReferences so the mods know the id of their equipments.
+                    for (int i = 0; i < CustomEquipmentCount; i++)
+                    {
+                        MethodInfo registerEquipment = typeof(EquipmentCatalog).GetMethod("RegisterEquipment", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                        object[] para = { (EquipmentIndex)(i + OriginalEquipmentCount), CustomEquipmentList[i].EquipmentDef };
+                        registerEquipment.Invoke(null, para);
+
+                        tmp2.Add(CustomEquipmentList[i].EquipmentDef.nameToken, i + OriginalEquipmentCount + TotalItemCount);
+                    }
+                    Debug.Log("[ItemLib] Added " + _customEquipmentCount + " custom equipments");
+                    _equipmentReferences = new ReadOnlyDictionary<string, int>(tmp2);
                 });
             };
         }
@@ -241,6 +282,17 @@ namespace ItemLib
                 cursor.Next.Operand = TotalItemCount;
             };
 
+            IL.RoR2.Achievements.Discover5EquipmentAchievement.EquipmentDiscovered += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
             IL.RoR2.Run.BuildDropTable += il =>
             {
                 ILCursor cursor = new ILCursor(il);
@@ -250,6 +302,12 @@ namespace ItemLib
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = TotalItemCount;
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
             };
 
             IL.RoR2.ItemCatalog.GetItemDef += il =>
@@ -298,6 +356,44 @@ namespace ItemLib
 
             };
 
+            // EquipmentCatalog
+
+            IL.RoR2.EquipmentCatalog.GetEquipmentDef += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
+            IL.RoR2.EquipmentCatalog.AllEquipmentEnumerator.MoveNext += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
+            // EliteCatalog
+
+            IL.RoR2.EliteCatalog.IsEquipmentElite += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
             /*IL.RoR2.Stats.PerItemStatDef.ctor += il => // no work ? inlined ?
             {
                 ILCursor cursor = new ILCursor(il);
@@ -314,7 +410,15 @@ namespace ItemLib
                 .GetValue(null);
             foreach (PerItemStatDef instance in instancesList)
             {
-                typeof(PerItemStatDef).GetField("keyToStatDef", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(instance, new StatDef[78 + CustomItemCount]);
+                typeof(PerItemStatDef).GetField("keyToStatDef", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(instance, new StatDef[OriginalItemCount + CustomItemCount]);
+            }
+
+            var instancesList_2 = (List<PerEquipmentStatDef>)typeof(PerEquipmentStatDef)
+                .GetField("instancesList", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .GetValue(null);
+            foreach (PerEquipmentStatDef instance in instancesList_2)
+            {
+                typeof(PerEquipmentStatDef).GetField("keyToStatDef", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(instance, new StatDef[OriginalEquipmentCount + CustomEquipmentCount]);
             }
 
             IL.RoR2.RunReport.PlayerInfo.ctor += il =>
@@ -341,9 +445,9 @@ namespace ItemLib
 
             // PickupIndex : Some methods are inlined, monomod for that and reflection for some of its fields.
 
-            typeof(PickupIndex).SetFieldValue("lunarCoin1", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount));
-            typeof(PickupIndex).SetFieldValue("last", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount));
-            typeof(PickupIndex).SetFieldValue("end", new PickupIndex((ItemIndex)TotalItemCount + _totalEquipmentCount + CoinCount));
+            typeof(PickupIndex).SetFieldValue("lunarCoin1", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount));
+            typeof(PickupIndex).SetFieldValue("last", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount));
+            typeof(PickupIndex).SetFieldValue("end", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount + CoinCount));
             typeof(PickupIndex).SetFieldValue("none", new PickupIndex((ItemIndex)(-1))); // this is real fucking fuckery fuck.
 
             // ItemMask
@@ -386,6 +490,46 @@ namespace ItemLib
             for (int i = OriginalItemCount; i < TotalItemCount; i++)
                 all.AddItem((ItemIndex)i);
 
+            // EquipmentMask
+
+            IL.RoR2.EquipmentMask.HasEquipment += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
+            IL.RoR2.EquipmentMask.AddEquipment += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
+            IL.RoR2.EquipmentMask.RemoveEquipment += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
+            };
+
+            EquipmentMask all_2 = (EquipmentMask)typeof(EquipmentMask)
+                .GetField("all", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+            for (int i = OriginalEquipmentCount; i < TotalEquipmentCount; i++)
+                all_2.AddEquipment((EquipmentIndex)i);
+
             // CharacterModel
 
             IL.RoR2.CharacterModel.ctor += il =>
@@ -426,7 +570,7 @@ namespace ItemLib
                     i => i.MatchLdcI4(OriginalEquipmentCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = _totalEquipmentCount;
+                cursor.Next.Operand = TotalEquipmentCount;
             };
 
             IL.RoR2.ItemDisplayRuleSet.Reset += il =>
@@ -443,7 +587,7 @@ namespace ItemLib
                     i => i.MatchLdcI4(OriginalEquipmentCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = _totalEquipmentCount;
+                cursor.Next.Operand = TotalEquipmentCount;
             };
 
             // RuleCatalog
@@ -457,6 +601,12 @@ namespace ItemLib
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = TotalItemCount;
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalEquipmentCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEquipmentCount;
             };
 
             List<RuleDef> allRuleDefs = (List<RuleDef>) typeof(RuleCatalog)
@@ -464,6 +614,8 @@ namespace ItemLib
                 .GetValue(null);
             for (int i = OriginalItemCount; i < TotalItemCount; i++)
                 allRuleDefs.Add(RuleDef.FromItem((ItemIndex)i));
+            for (int j = OriginalEquipmentCount; j < TotalEquipmentCount; j++)
+                allRuleDefs.Add(RuleDef.FromEquipment((EquipmentIndex)j));
 
             // bug UserProfile
 
@@ -650,6 +802,51 @@ namespace ItemLib
                 });
             };
 
+            IL.RoR2.UI.GenericNotification.SetEquipment += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                string name = null;
+                GenericNotification instance = null;
+
+                cursor.Emit(OpCodes.Ldarg_0);
+
+                cursor.EmitDelegate<Action<GenericNotification>>((self) =>
+                {
+                    instance = self;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchLdfld("RoR2.EquipmentDef", "nameToken")
+                );
+                cursor.Index++;
+
+                cursor.EmitDelegate<Func<string, string>>((nameToken) =>
+                {
+                    name = nameToken;
+                    return nameToken;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchCall("UnityEngine.Resources", "Load"),
+                    i => i.MatchCallvirt("UnityEngine.UI.RawImage", "set_texture")
+                );
+
+                cursor.Index += 2;
+
+                cursor.EmitDelegate<Action>(() =>
+                {
+                    if (name != null)
+                    {
+                        CustomEquipment currentCustomEquipment = CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(name));
+                        if (currentCustomEquipment != null && currentCustomEquipment.Icon != null)
+                        {
+                            if (instance != null)
+                                instance.iconImage.texture = (Texture)currentCustomEquipment.Icon;
+                        }
+                    }
+                });
+            };
+
             IL.RoR2.UI.ItemIcon.SetItemIndex += il =>
             {
                 ILCursor cursor = new ILCursor(il);
@@ -691,6 +888,56 @@ namespace ItemLib
                         {
                             if (instance != null)
                                 instance.image.texture = (Texture)currentCustomItem.Icon;
+                        }
+                    }
+                });
+            };
+
+            IL.RoR2.UI.EquipmentIcon.SetDisplayData += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                string name = null;
+                EquipmentDef equipDef_arg = null;
+                EquipmentIcon instance = null;
+
+                cursor.GotoNext(
+                    i => i.MatchLdarg(1),
+                    i => i.MatchLdfld("RoR2.UI.EquipmentIcon/DisplayData", "equipmentDef")
+                );
+
+                cursor.Index += 2;
+
+                cursor.EmitDelegate<Func<EquipmentDef, EquipmentDef>>((self) =>
+                {
+                    equipDef_arg = self;
+                    if(equipDef_arg != null)
+                        name = equipDef_arg.nameToken;
+                    return self;
+                });
+
+                cursor.Emit(OpCodes.Ldarg_0);
+
+                cursor.EmitDelegate<Action<EquipmentIcon>>((self) =>
+                {
+                    instance = self;
+                });
+
+                cursor.GotoNext(
+                    i => i.MatchLdloc(0),
+                    i => i.MatchCallvirt("UnityEngine.UI.RawImage", "set_texture")
+                );
+
+                cursor.Index += 2;
+
+                cursor.EmitDelegate<Action>(() =>
+                {
+                    if (name != null)
+                    {
+                        CustomEquipment currentCustomEquipment = CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(name));
+                        if (currentCustomEquipment != null && currentCustomEquipment.Icon != null)
+                        {
+                            if (equipDef_arg != null)
+                                instance.iconImage.texture = (Texture)currentCustomEquipment.Icon;
                         }
                     }
                 });
