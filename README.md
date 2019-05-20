@@ -8,7 +8,7 @@ A library for custom items and equipments in Risk of Rain 2.
 
 ## Installation
 
-ItemLib is a BepinEx plugin and a Monomod patch, that will also be used as an assembly reference for your BepinEx Plugin or Unity Assetmod. (MultiMod)
+ItemLib is a BepinEx plugin and a Monomod patch, that will also be used as an assembly reference for your BepinEx Plugin (and an Unity AssetBundle for custom assets)
 
 ### Installing ItemLib
 
