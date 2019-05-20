@@ -13,8 +13,8 @@ ItemLib is a BepinEx plugin and a Monomod patch, that will also be used as an as
 ### Installing ItemLib
 
 - [Install BepInEx](https://thunderstore.io/package/bbepis/BepInExPack)
-- Download the latest [itemlib.zip](https://github.com/xiaoxiao921/ItemLib/releases)
-- Extract the zip to your `BepInEx/plugins/` folder
+- Download the latest [release](https://github.com/xiaoxiao921/ItemLib/releases)
+- Follow the instructions there.
 
 ## Project Setup
 
