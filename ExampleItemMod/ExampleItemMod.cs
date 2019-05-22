@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace ExampleItemMod
 {
+    [BepInDependency(ItemLibPlugin.ModGuid)]
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ExampleItemMod : BaseUnityPlugin
     {

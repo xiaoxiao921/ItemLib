@@ -9,7 +9,7 @@ using RoR2;
 using UnityEngine;
 using RoR2.Stats;
 using Mono.Cecil.Cil;
-using RoR2.Orbs;
+using R2API;
 using RoR2.UI;
 
 namespace ItemLib
@@ -55,16 +55,16 @@ namespace ItemLib
         public static IReadOnlyDictionary<string, int> _itemReferences;
         public static IReadOnlyDictionary<string, int> _equipmentReferences;
 
-        public static bool Initialized;
+        public static bool CatalogInitialized;
 
         internal static void Initialize()
         {
-            if (Initialized)
+            if (CatalogInitialized)
                 return;
 
             // https://discordapp.com/channels/562704639141740588/562704639569428506/575081634898903040 ModRecalc implementation ?
 
-            // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called.
+            // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called, though all mods should have the BepinDependency in their header so it should never happen actually.
 
             Debug.Log("[ItemLib] Initializing");
 
@@ -72,7 +72,9 @@ namespace ItemLib
             TotalItemCount = OriginalItemCount + CustomItemCount;
             TotalEquipmentCount = OriginalEquipmentCount + CustomEquipmentCount;
 
-            InitCatalogHook();
+            if(!CatalogInitialized)
+                InitCatalogHook();
+            CatalogInitialized = true;
 
             // Call DefineItems because catalog is already made...
             // Also hooking on it execute body method, EmitDelegate not included.
@@ -85,13 +87,11 @@ namespace ItemLib
             defineEquipments.Invoke(null, null);
 
             InitHooks();
-
-            Initialized = true;
         }
 
         public static int GetItemId(string name)
         {
-            if (!Initialized)
+            if (!CatalogInitialized)
                 Initialize();
 
             _itemReferences.TryGetValue(name, out var id);
@@ -101,7 +101,7 @@ namespace ItemLib
 
         public static int GetEquipmentId(string name)
         {
-            if (!Initialized)
+            if (!CatalogInitialized)
                 Initialize();
 
             _equipmentReferences.TryGetValue(name, out var id);
@@ -116,7 +116,8 @@ namespace ItemLib
 
             List<Assembly> allAssemblies = new List<Assembly>();
 
-            string path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\ItemLib", "");
+
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
             {
@@ -293,7 +294,7 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };
 
-            IL.RoR2.Run.BuildDropTable += il =>
+            /*IL.RoR2.Run.BuildDropTable += il =>
             {
                 ILCursor cursor = new ILCursor(il);
 
@@ -308,7 +309,45 @@ namespace ItemLib
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = TotalEquipmentCount;
+            };*/
+
+
+            // R2API.ItemDropAPI
+
+            var t1_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+            var t2_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+            var t3_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+            var lunar_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+            var boss_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+
+            var equipments = CustomEquipmentList.Select(x => new PickupIndex((EquipmentIndex)GetEquipmentId(x.EquipmentDef.nameToken))).ToList();
+
+            var smallChestSelections = new [] {
+                t1_items.ToSelection(ItemDropAPI.DefaultChestTier1DropChance),
+                t2_items.ToSelection(ItemDropAPI.DefaultChestTier2DropChance),
+                t3_items.ToSelection(ItemDropAPI.DefaultChestTier3DropChance)
             };
+
+            var shrineSelections = new [] {
+                t1_items.ToSelection(ItemDropAPI.DefaultShrineTier1Weight),
+                t2_items.ToSelection(ItemDropAPI.DefaultShrineTier2Weight),
+                t3_items.ToSelection(ItemDropAPI.DefaultShrineTier3Weight),
+                equipments.ToSelection(ItemDropAPI.DefaultShrineEquipmentWeight)
+            };
+
+            ItemDropAPI.AddDrops(ItemDropLocation.SmallChest, smallChestSelections);
+            ItemDropAPI.AddDrops(ItemDropLocation.MediumChest, t2_items.ToSelection(ItemDropAPI.DefaultChestTier1DropChance));
+            ItemDropAPI.AddDrops(ItemDropLocation.MediumChest, t3_items.ToSelection(ItemDropAPI.DefaultChestTier2DropChance));
+            ItemDropAPI.AddDrops(ItemDropLocation.LargeChest, t3_items.ToSelection());
+
+            ItemDropAPI.AddDrops(ItemDropLocation.LunarChest, lunar_items.ToSelection());
+
+            ItemDropAPI.AddDrops(ItemDropLocation.EquipmentChest, equipments.ToSelection());
+
+            ItemDropAPI.AddDrops(ItemDropLocation.Boss, boss_items.ToSelection());
+            ItemDropAPI.AddDrops(ItemDropLocation.Boss, t2_items.ToSelection());
+
+            ItemDropAPI.AddDrops(ItemDropLocation.Shrine, shrineSelections);
 
             IL.RoR2.ItemCatalog.GetItemDef += il =>
             {
@@ -633,9 +672,9 @@ namespace ItemLib
 
             On.RoR2.UserProfile.SaveFieldAttribute.SetupPickupsSet += (orig, self, fieldInfo) =>
             {
-                self.getter = delegate (UserProfile userProfile)
+                self.getter = delegate(UserProfile userProfile)
                 {
-                    return " ";
+                    return "";
                 };
                 self.setter = delegate (UserProfile userProfile, string valueString)
                 {
@@ -643,9 +682,7 @@ namespace ItemLib
                 };
                 self.copier = delegate (UserProfile srcProfile, UserProfile destProfile)
                 {
-                    Array sourceArray = (bool[])fieldInfo.GetValue(srcProfile);
-                    bool[] array = (bool[])fieldInfo.GetValue(destProfile);
-                    Array.Copy(sourceArray, array, array.Length);
+
                 };
             };
 

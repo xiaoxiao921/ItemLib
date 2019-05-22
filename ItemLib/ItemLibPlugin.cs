@@ -1,15 +1,20 @@
-﻿using BepInEx;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using BepInEx;
+using R2API;
 using RoR2;
 using UnityEngine;
 
 namespace ItemLib
 {
+    [BepInDependency(R2API.R2API.PluginGUID)]
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        private const string ModVer = "0.0.4";
-        private const string ModName = "ItemLib";
-        private const string ModGuid = "dev.iDeathHD.ItemLib";
+        public const string ModVer = "0.0.6";
+        public const string ModName = "ItemLib";
+        public const string ModGuid = "dev.iDeathHD.ItemLib";
 
         public ItemLibPlugin()
         {
@@ -27,27 +32,42 @@ namespace ItemLib
             };
         }
 
-        [ConCommand(commandName = "custom_item", flags = ConVarFlags.ExecuteOnServer,
-            helpText = "Give custom item, id only. /custom_item 78 1")]
-        private static void Customitem(ConCommandArgs args)
+        [ConCommand(commandName = "give_custom_item", flags = ConVarFlags.ExecuteOnServer,
+            helpText = "Give custom item, id only for items. Example : /give_custom_item 78 1. Usage : /give_custom_item [itemName/custom_itemID] (optional)[count] (optional)[playerName/playerID]")]
+        private static void GiveCustomItem(ConCommandArgs args)
         {
             string indexString = args.userArgs[0];
             string countString = args.userArgs[1];
+            string playerString = args.userArgs[2];
 
-            Inventory inventory = args.sender.master.inventory;
+            NetworkUser player = GetNetUserFromString(playerString);
 
-            if (!int.TryParse(countString, out var itemCount))
+            Inventory inventory = player != null ? player.master.inventory : args.sender.master.inventory;
+
+
+            int itemCount = 1;
+            if (!int.TryParse(countString, out itemCount))
             {
                 itemCount = 1;
             }
 
-            if (int.TryParse(indexString, out var itemIndex))
+            int itemIndex = 0;
+            ItemIndex itemType = ItemIndex.Syringe;
+            if (int.TryParse(indexString, out itemIndex))
             {
-                if (itemIndex >= 0 && itemIndex < ItemLib.TotalItemCount)
+                if (itemIndex < (int)ItemIndex.Count && itemIndex >= 0)
                 {
-                    var itemType = (ItemIndex) itemIndex;
+                    itemType = (ItemIndex)itemIndex;
                     inventory.GiveItem(itemType, itemCount);
                 }
+            }
+            else if (Enum.TryParse<ItemIndex>(indexString, true, out itemType))
+            {
+                inventory.GiveItem(itemType, itemCount);
+            }
+            else
+            {
+                Debug.Log("Incorrect arguments. Usage : /give_custom_item [itemName/custom_itemID] [count] [playerName/playerID]. Example : /give_custom_item 78 1");
             }
         }
 #if DEBUG
@@ -56,13 +76,55 @@ namespace ItemLib
             if (Input.GetKeyDown(KeyCode.F3))
             {
                 //var dropList = Run.instance.availableEquipmentDropList;
-                var dropList = Run.instance.availableTier3DropList;
-                Debug.Log(dropList.Count);
+
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                for (int i = 0; i != dropList.Count; i++)
-                    PickupDropletController.CreatePickupDroplet(dropList[i], trans.position, trans.forward * 20f);
+                var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscGoldChest");
+                var chestbeha = chest.prefab.GetComponent<ChestBehavior>();
+                foreach (var pi in ItemDropAPI.Selection[ItemDropLocation.LargeChest])
+                {
+                    Debug.Log("dropchance : "+pi.DropChance);
+                    foreach (var pu in pi.Pickups)
+                    {
+                        Debug.Log("itemIndex : "+(int)pu.itemIndex);
+                        PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
+                    }
+                }
+
+                chest.DoSpawn(trans.position, trans.rotation);
             }
         }
 #endif
+        private static NetworkUser GetNetUserFromString(string playerString)
+        {
+            int result = 0;
+
+            if (playerString != "")
+            {
+                if (int.TryParse(playerString, out result))
+                {
+                    if (result < NetworkUser.readOnlyInstancesList.Count && result >= 0)
+                    {
+
+                        return NetworkUser.readOnlyInstancesList[result];
+                    }
+                    Debug.Log("Specified player index does not exist");
+                    return null;
+                }
+                else
+                {
+                    foreach (NetworkUser n in NetworkUser.readOnlyInstancesList)
+                    {
+                        if (n.userName.Equals(playerString, StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            return n;
+                        }
+                    }
+                    Debug.Log("Specified player does not exist");
+                    return null;
+                }
+            }
+
+            return null;
+        }
     }
 }
