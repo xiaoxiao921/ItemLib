@@ -12,7 +12,7 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        public const string ModVer = "0.0.7";
+        public const string ModVer = "0.0.8";
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
