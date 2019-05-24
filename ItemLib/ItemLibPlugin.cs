@@ -12,7 +12,7 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        public const string ModVer = "0.0.6";
+        public const string ModVer = "0.0.7";
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
@@ -33,14 +33,20 @@ namespace ItemLib
         }
 
         [ConCommand(commandName = "give_custom_item", flags = ConVarFlags.ExecuteOnServer,
-            helpText = "Give custom item, id only for items. Example : /give_custom_item 78 1. Usage : /give_custom_item [itemName/custom_itemID] (optional)[count] (optional)[playerName/playerID]")]
+            helpText = "Give custom item, id only for items. Get all custom item's id : /il_getids in console. Usage Example : /give_custom_item 78 1. Usage : /give_custom_item [itemName/custom_itemID] (optional)[count] (optional)[playerName/playerID]")]
         private static void GiveCustomItem(ConCommandArgs args)
         {
-            string indexString = args.userArgs[0];
-            string countString = args.userArgs[1];
-            string playerString = args.userArgs[2];
+            string countString = null;
+            NetworkUser player = null;
 
-            NetworkUser player = GetNetUserFromString(playerString);
+            string indexString = args.userArgs[0];
+            if(args.userArgs.Count > 1)
+                countString = args.userArgs[1];
+            if (args.userArgs.Count > 2)
+            {
+                var playerString = args.userArgs[2];
+                player = GetNetUserFromString(playerString);
+            }
 
             Inventory inventory = player != null ? player.master.inventory : args.sender.master.inventory;
 
@@ -55,20 +61,37 @@ namespace ItemLib
             ItemIndex itemType = ItemIndex.Syringe;
             if (int.TryParse(indexString, out itemIndex))
             {
-                if (itemIndex < (int)ItemIndex.Count && itemIndex >= 0)
+                if (itemIndex < (ItemLib.TotalItemCount + ItemLib.TotalEquipmentCount) && itemIndex >= 0)
                 {
-                    itemType = (ItemIndex)itemIndex;
+                    itemType = (ItemIndex) itemIndex;
                     inventory.GiveItem(itemType, itemCount);
                 }
             }
-            else if (Enum.TryParse<ItemIndex>(indexString, true, out itemType))
-            {
-                inventory.GiveItem(itemType, itemCount);
-            }
             else
             {
-                Debug.Log("Incorrect arguments. Usage : /give_custom_item [itemName/custom_itemID] [count] [playerName/playerID]. Example : /give_custom_item 78 1");
+                Debug.Log("Incorrect arguments. Usage Example : /give_custom_item 78 1. Usage : /give_custom_item [itemName/custom_itemID] (optional)[count] (optional)[playerName/playerID]");
             }
+        }
+
+        [ConCommand(commandName = "il_getids", flags = ConVarFlags.None,
+            helpText = "Give custom item, id only for items. Get all custom item's id : /il_getids in console. Usage Example : /give_custom_item 78 1. Usage : /give_custom_item [itemName/custom_itemID] (optional)[count] (optional)[playerName/playerID]")]
+        private static void GetIds(ConCommandArgs args)
+        {
+            string list = "Custom Items IDs: \n";
+
+            for (int i = 0; i < ItemLib.CustomItemList.Count; i++)
+            {
+                list += ItemLib.CustomItemList[i].ItemDef.nameToken + " | " + (i + ItemLib.OriginalItemCount)+"\n";
+            }
+
+            list += "Custom Equipments IDs : \n";
+
+            for (int i = 0; i < ItemLib.CustomEquipmentList.Count; i++)
+            {
+                list += ItemLib.CustomEquipmentList[i].EquipmentDef.nameToken + " | " + (i + ItemLib.OriginalEquipmentCount+ItemLib.TotalItemCount) + "\n";
+            }
+
+            Debug.Log(list);
         }
 #if DEBUG
         public void Update()

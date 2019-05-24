@@ -77,24 +77,16 @@ namespace RoR2
         {
             // Check if the custom item has a custom prefab.
             
-            var l_value = value;
-            var itemName = ItemLib.ItemLib._itemReferences.FirstOrDefault(x => x.Value == l_value).Key;
+            var currentCustomItem = ItemLib.ItemLib.GetCustomItem(value);
+            if (currentCustomItem != null && currentCustomItem.Prefab != null)
             {
-                CustomItem currentCustomItem = ItemLib.ItemLib.CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(itemName));
-                if (currentCustomItem != null && currentCustomItem.Prefab != null)
-                {
-                    return currentCustomItem.Prefab;
-                }
+                return currentCustomItem.Prefab;
             }
 
-            itemName = ItemLib.ItemLib._equipmentReferences.FirstOrDefault(x => x.Value == l_value).Key;
-            if (itemName != null)
+            var currentCustomEquipment = ItemLib.ItemLib.GetCustomEquipment(value);
+            if (currentCustomEquipment != null && currentCustomEquipment.Prefab != null)
             {
-                CustomEquipment currentCustomEquipment = ItemLib.ItemLib.CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(itemName));
-                if (currentCustomEquipment != null && currentCustomEquipment.Prefab != null)
-                {
-                    return currentCustomEquipment.Prefab;
-                }
+                return currentCustomEquipment.Prefab;
             }
 
             if (value >= 0)

@@ -110,6 +110,27 @@ namespace ItemLib
             return id - TotalItemCount;
         }
 
+        public static CustomItem GetCustomItem(string name)
+        {
+            return CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+        }
+
+        public static CustomEquipment GetCustomEquipment(string name)
+        {
+            return CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(name));
+        }
+
+        public static CustomItem GetCustomItem(int indexValue)
+        {
+
+            return GetCustomItem(_itemReferences.FirstOrDefault(x => x.Value == indexValue).Key);
+        }
+
+        public static CustomEquipment GetCustomEquipment(int indexValue)
+        {
+            return GetCustomEquipment(_equipmentReferences.FirstOrDefault(x => x.Value == indexValue).Key);
+        }
+
         public static void GetAllCustomItemsAndEquipments()
         {
             if (_customItemCount != 0 || _customEquipmentCount != 0)
@@ -819,16 +840,11 @@ namespace ItemLib
                 {
                     if (id != 0)
                     {
-                        var itemName = _itemReferences.FirstOrDefault(x => x.Value == id).Key;
-
-                        if (itemName != null)
+                        var currentCustomItem = GetCustomEquipment(id);
+                        if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
-                            CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(itemName));
-                            if (currentCustomItem != null && currentCustomItem.Icon != null)
-                            {
-                                if (instance != null)
-                                    instance = (Sprite)currentCustomItem.Icon;
-                            }
+                            if (instance != null)
+                                instance = (Sprite)currentCustomItem.Icon;
                         }
                     }
                 });
@@ -870,7 +886,7 @@ namespace ItemLib
                 {
                     if (name != null)
                     {
-                        CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                        var currentCustomItem = GetCustomItem(name);
                         if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
                             if (instance != null)
@@ -915,7 +931,7 @@ namespace ItemLib
                 {
                     if (name != null)
                     {
-                        CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                        var currentCustomItem = GetCustomItem(name);
                         if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
                             if (instance != null)
@@ -960,7 +976,7 @@ namespace ItemLib
                 {
                     if (name != null)
                     {
-                        CustomEquipment currentCustomEquipment = CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(name));
+                        var currentCustomEquipment = GetCustomEquipment(name);
                         if (currentCustomEquipment != null && currentCustomEquipment.Icon != null)
                         {
                             if (instance != null)
@@ -1006,7 +1022,7 @@ namespace ItemLib
                 {
                     if (name != null)
                     {
-                        CustomItem currentCustomItem = CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
+                        var currentCustomItem = GetCustomItem(name);
                         if (currentCustomItem != null && currentCustomItem.Icon != null)
                         {
                             if (instance != null)
@@ -1056,7 +1072,7 @@ namespace ItemLib
                 {
                     if (name != null)
                     {
-                        CustomEquipment currentCustomEquipment = CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(name));
+                        var currentCustomEquipment = GetCustomEquipment(name);
                         if (currentCustomEquipment != null && currentCustomEquipment.Icon != null)
                         {
                             if (equipDef_arg != null)
