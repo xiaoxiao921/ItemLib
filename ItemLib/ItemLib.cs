@@ -11,6 +11,7 @@ using RoR2.Stats;
 using Mono.Cecil.Cil;
 using R2API;
 using RoR2.UI;
+using UnityEngine.Networking;
 
 namespace ItemLib
 {
@@ -311,43 +312,132 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };*/
 
-
-            // R2API.ItemDropAPI
-
-            var t1_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
-            var t2_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
-            var t3_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
-            var lunar_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
-            var boss_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
-
-            var equipments = CustomEquipmentList.Select(x => new PickupIndex((EquipmentIndex)GetEquipmentId(x.EquipmentDef.nameToken))).ToList();
-
-            var smallChestSelections = new [] {
-                t1_items.ToSelection(ItemDropAPI.DefaultChestTier1DropChance),
-                t2_items.ToSelection(ItemDropAPI.DefaultChestTier2DropChance),
-                t3_items.ToSelection(ItemDropAPI.DefaultChestTier3DropChance)
+            On.RoR2.Run.BuildDropTable += (orig, self) =>
+            {
+                self.availableTier1DropList.Clear();
+                self.availableTier2DropList.Clear();
+                self.availableTier3DropList.Clear();
+                self.availableLunarDropList.Clear();
+                self.availableEquipmentDropList.Clear();
+                for (ItemIndex itemIndex = ItemIndex.Syringe; itemIndex < (ItemIndex)TotalItemCount; itemIndex++)
+                {
+                    if (self.availableItems.HasItem(itemIndex))
+                    {
+                        ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
+                        List<PickupIndex> list = null;
+                        switch (itemDef.tier)
+                        {
+                            case ItemTier.Tier1:
+                                list = self.availableTier1DropList;
+                                break;
+                            case ItemTier.Tier2:
+                                list = self.availableTier2DropList;
+                                break;
+                            case ItemTier.Tier3:
+                                list = self.availableTier3DropList;
+                                break;
+                            case ItemTier.Lunar:
+                                list = self.availableLunarDropList;
+                                break;
+                        }
+                        if (list != null)
+                        {
+                            list.Add(new PickupIndex(itemIndex));
+                        }
+                    }
+                }
+                for (EquipmentIndex equipmentIndex = EquipmentIndex.CommandMissile; equipmentIndex < (EquipmentIndex)TotalEquipmentCount; equipmentIndex++)
+                {
+                    if (self.availableEquipment.HasEquipment(equipmentIndex))
+                    {
+                        EquipmentDef equipmentDef = EquipmentCatalog.GetEquipmentDef(equipmentIndex);
+                        if (equipmentDef.canDrop)
+                        {
+                            if (!equipmentDef.isLunar)
+                            {
+                                self.availableEquipmentDropList.Add(new PickupIndex(equipmentIndex));
+                            }
+                            else
+                            {
+                                self.availableLunarDropList.Add(new PickupIndex(equipmentIndex));
+                            }
+                        }
+                    }
+                }
+                self.smallChestDropTierSelector.Clear();
+                self.smallChestDropTierSelector.AddChoice(self.availableTier1DropList, 0.8f);
+                self.smallChestDropTierSelector.AddChoice(self.availableTier2DropList, 0.2f);
+                self.smallChestDropTierSelector.AddChoice(self.availableTier3DropList, 0.01f);
+                self.mediumChestDropTierSelector.Clear();
+                self.mediumChestDropTierSelector.AddChoice(self.availableTier2DropList, 0.8f);
+                self.mediumChestDropTierSelector.AddChoice(self.availableTier3DropList, 0.2f);
+                self.largeChestDropTierSelector.Clear();
             };
 
-            var shrineSelections = new [] {
-                t1_items.ToSelection(ItemDropAPI.DefaultShrineTier1Weight),
-                t2_items.ToSelection(ItemDropAPI.DefaultShrineTier2Weight),
-                t3_items.ToSelection(ItemDropAPI.DefaultShrineTier3Weight),
-                equipments.ToSelection(ItemDropAPI.DefaultShrineEquipmentWeight)
+            On.RoR2.ChestBehavior.RollItem += (orig, self) =>
+            {
+                if (!NetworkServer.active)
+                {
+                    Debug.LogWarning("[Server] function 'System.Void RoR2.ChestBehavior::RollItem()' called on client");
+                    return;
+                }
+                WeightedSelection<List<PickupIndex>> weightedSelection = new WeightedSelection<List<PickupIndex>>(8);
+                weightedSelection.AddChoice(Run.instance.availableTier1DropList, self.tier1Chance);
+                weightedSelection.AddChoice(Run.instance.availableTier2DropList, self.tier2Chance);
+                weightedSelection.AddChoice(Run.instance.availableTier3DropList, self.tier3Chance);
+                weightedSelection.AddChoice(Run.instance.availableLunarDropList, self.lunarChance);
+                List<PickupIndex> dropList = weightedSelection.Evaluate(Run.instance.treasureRng.nextNormalizedFloat);
+
+                //PickFromList
+                if (!NetworkServer.active)
+                {
+                    Debug.LogWarning("[Server] function 'System.Void RoR2.ChestBehavior::PickFromList(System.Collections.Generic.List`1<RoR2.PickupIndex>)' called on client");
+                    return;
+                }
+                self.SetFieldValue("dropPickup", PickupIndex.none);
+                if (dropList != null && dropList.Count > 0)
+                {
+                    self.SetFieldValue("dropPickup", Run.instance.treasureRng.NextElementUniform<PickupIndex>(dropList));
+                }
             };
 
-            ItemDropAPI.AddDrops(ItemDropLocation.SmallChest, smallChestSelections);
-            ItemDropAPI.AddDrops(ItemDropLocation.MediumChest, t2_items.ToSelection(ItemDropAPI.DefaultChestTier1DropChance));
-            ItemDropAPI.AddDrops(ItemDropLocation.MediumChest, t3_items.ToSelection(ItemDropAPI.DefaultChestTier2DropChance));
-            ItemDropAPI.AddDrops(ItemDropLocation.LargeChest, t3_items.ToSelection());
 
-            ItemDropAPI.AddDrops(ItemDropLocation.LunarChest, lunar_items.ToSelection());
+                // R2API.ItemDropAPI
 
-            ItemDropAPI.AddDrops(ItemDropLocation.EquipmentChest, equipments.ToSelection());
+                /*var t1_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+                var t2_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+                var t3_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+                var lunar_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
+                var boss_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList();
 
-            ItemDropAPI.AddDrops(ItemDropLocation.Boss, boss_items.ToSelection());
-            ItemDropAPI.AddDrops(ItemDropLocation.Boss, t2_items.ToSelection());
+                var equipments = CustomEquipmentList.Select(x => new PickupIndex((EquipmentIndex)GetEquipmentId(x.EquipmentDef.nameToken))).ToList();
 
-            ItemDropAPI.AddDrops(ItemDropLocation.Shrine, shrineSelections);
+                var smallChestSelections = new [] {
+                    t1_items.ToSelection(ItemDropAPI.DefaultChestTier1DropChance),
+                    t2_items.ToSelection(ItemDropAPI.DefaultChestTier2DropChance),
+                    t3_items.ToSelection(ItemDropAPI.DefaultChestTier3DropChance)
+                };
+
+                var shrineSelections = new [] {
+                    t1_items.ToSelection(ItemDropAPI.DefaultShrineTier1Weight),
+                    t2_items.ToSelection(ItemDropAPI.DefaultShrineTier2Weight),
+                    t3_items.ToSelection(ItemDropAPI.DefaultShrineTier3Weight),
+                    equipments.ToSelection(ItemDropAPI.DefaultShrineEquipmentWeight)
+                };
+
+                ItemDropAPI.AddDrops(ItemDropLocation.SmallChest, smallChestSelections);
+                ItemDropAPI.AddDrops(ItemDropLocation.MediumChest, t2_items.ToSelection(ItemDropAPI.DefaultChestTier1DropChance));
+                ItemDropAPI.AddDrops(ItemDropLocation.MediumChest, t3_items.ToSelection(ItemDropAPI.DefaultChestTier2DropChance));
+                ItemDropAPI.AddDrops(ItemDropLocation.LargeChest, t3_items.ToSelection());
+
+                ItemDropAPI.AddDrops(ItemDropLocation.LunarChest, lunar_items.ToSelection());
+
+                ItemDropAPI.AddDrops(ItemDropLocation.EquipmentChest, equipments.ToSelection());
+
+                ItemDropAPI.AddDrops(ItemDropLocation.Boss, boss_items.ToSelection());
+                ItemDropAPI.AddDrops(ItemDropLocation.Boss, t2_items.ToSelection());
+
+                ItemDropAPI.AddDrops(ItemDropLocation.Shrine, shrineSelections);*/
 
             IL.RoR2.ItemCatalog.GetItemDef += il =>
             {

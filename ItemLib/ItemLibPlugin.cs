@@ -79,18 +79,21 @@ namespace ItemLib
 
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
                 var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscGoldChest");
-                var chestbeha = chest.prefab.GetComponent<ChestBehavior>();
-                foreach (var pi in ItemDropAPI.Selection[ItemDropLocation.LargeChest])
+                
+                
+                /*foreach (var pi in ItemDropAPI.Selection[ItemDropLocation.LargeChest])
                 {
                     Debug.Log("dropchance : "+pi.DropChance);
                     foreach (var pu in pi.Pickups)
                     {
                         Debug.Log("itemIndex : "+(int)pu.itemIndex);
-                        PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
+                        //PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
                     }
-                }
+                }*/
 
-                chest.DoSpawn(trans.position, trans.rotation);
+                var go = chest.DoSpawn(trans.position, trans.rotation);
+                //var chestbeha = go.GetComponent<ChestBehavior>();
+                //chestbeha.Open();
             }
         }
 #endif
