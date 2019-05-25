@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using MonoMod.Cil;
@@ -12,6 +13,7 @@ using Mono.Cecil.Cil;
 using R2API;
 using RoR2.UI;
 using UnityEngine.Networking;
+using Debug = UnityEngine.Debug;
 
 namespace ItemLib
 {
@@ -67,7 +69,7 @@ namespace ItemLib
 
             // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called, though all mods should have the BepinDependency in their header so it should never happen actually.
 
-            Debug.Log("[ItemLib] Initializing");
+            Logger.Info("[ItemLib] Initializing");
 
             GetAllCustomItemsAndEquipments();
             TotalItemCount = OriginalItemCount + CustomItemCount;
@@ -138,8 +140,13 @@ namespace ItemLib
 
             List<Assembly> allAssemblies = new List<Assembly>();
 
-            string path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\ItemLib", "");
+            var path = System.IO.Directory.GetParent(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).FullName;
 
+            if (!path.EndsWith("ins"))
+            {
+                Logger.Fatal("ItemLib should be placed in its own folder in the BepinEx \\plugins folder.");
+            }
+                
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
             {
@@ -217,7 +224,7 @@ namespace ItemLib
 
                         tmp.Add(CustomItemList[i].ItemDef.nameToken , i + OriginalItemCount);
                     }
-                    Debug.Log("[ItemLib] Added " + _customItemCount + " custom items");
+                    Logger.Info("[ItemLib] Added " + _customItemCount + " custom items");
                     _itemReferences = new ReadOnlyDictionary<string, int>(tmp);
                 });
             };
@@ -253,7 +260,7 @@ namespace ItemLib
 
                         tmp2.Add(CustomEquipmentList[i].EquipmentDef.nameToken, i + OriginalEquipmentCount + TotalItemCount);
                     }
-                    Debug.Log("[ItemLib] Added " + _customEquipmentCount + " custom equipments");
+                    Logger.Info("[ItemLib] Added " + _customEquipmentCount + " custom equipments");
                     _equipmentReferences = new ReadOnlyDictionary<string, int>(tmp2);
                 });
             };
@@ -425,13 +432,13 @@ namespace ItemLib
 
             // R2API.ItemDropAPI
 
-            var t1_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList().Select(x => (ItemIndex)x.value).ToArray();
-            var t2_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList().Select(x => (ItemIndex)x.value).ToArray();
-            var t3_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList().Select(x => (ItemIndex)x.value).ToArray();
-            var lunar_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList().Select(x => (ItemIndex)x.value).ToArray();
-            var boss_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => new PickupIndex((ItemIndex)GetItemId(x.ItemDef.nameToken))).ToList().Select(x => (ItemIndex)x.value).ToArray();
+            var t1_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var t2_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var t3_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var lunar_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var boss_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => (x.ItemDef.itemIndex)).ToArray();
 
-            var equipments = CustomEquipmentList.Select(x => new PickupIndex((EquipmentIndex)GetEquipmentId(x.EquipmentDef.nameToken))).ToList().Select(x => (EquipmentIndex)x.value).ToArray();
+            var equipments = CustomEquipmentList.Select(x => (x.EquipmentDef.equipmentIndex)).ToArray();
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier1, t1_items);
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier2, t2_items);
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier3, t3_items);

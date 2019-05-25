@@ -12,14 +12,15 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        public const string ModVer = "0.0.8";
+        public const string ModVer = "0.0.9";
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
         public ItemLibPlugin()
         {
+            InitLogger();
 #if DEBUG
-            Debug.Log("[ItemLib] Debug");
+            Logger.LogInfo("[ItemLib] Debug");
 #endif
             ItemLib.Initialize();
 
@@ -98,21 +99,14 @@ namespace ItemLib
         {
             if (Input.GetKeyDown(KeyCode.F3))
             {
-                //var dropList = Run.instance.availableEquipmentDropList;
-
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscGoldChest");
+                var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscEquipmentBarrel");
                 
                 
-                /*foreach (var pi in ItemDropAPI.Selection[ItemDropLocation.LargeChest])
+                foreach (var pu in ItemLib.CustomItemList.Select(x => new RoR2.PickupIndex(x.ItemDef.itemIndex)))
                 {
-                    Debug.Log("dropchance : "+pi.DropChance);
-                    foreach (var pu in pi.Pickups)
-                    {
-                        Debug.Log("itemIndex : "+(int)pu.itemIndex);
-                        //PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
-                    }
-                }*/
+                    PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
+                }
 
                 var go = chest.DoSpawn(trans.position, trans.rotation);
                 //var chestbeha = go.GetComponent<ChestBehavior>();
@@ -151,6 +145,16 @@ namespace ItemLib
             }
 
             return null;
+        }
+
+        public void InitLogger()
+        {
+            global::ItemLib.Logger.Debug = Logger.LogDebug;
+            global::ItemLib.Logger.Error = Logger.LogError;
+            global::ItemLib.Logger.Fatal = Logger.LogFatal;
+            global::ItemLib.Logger.Info = Logger.LogInfo;
+            global::ItemLib.Logger.Message = Logger.LogMessage;
+            global::ItemLib.Logger.Warning = Logger.LogWarning;
         }
     }
 }
