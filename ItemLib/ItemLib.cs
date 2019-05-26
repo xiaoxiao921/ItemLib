@@ -2,7 +2,6 @@
 using System.Reflection;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using MonoMod.Cil;
@@ -12,8 +11,6 @@ using RoR2.Stats;
 using Mono.Cecil.Cil;
 using R2API;
 using RoR2.UI;
-using UnityEngine.Networking;
-using Debug = UnityEngine.Debug;
 
 namespace ItemLib
 {
