@@ -753,8 +753,6 @@ namespace ItemLib
 
             // Ok so this one is kinda a problem : extending the discoveredPickups bool array make it so Rewired cannot put any mouse / kb / gamepad mapping into save files,
             // Why it does that, i don't know.
-            // so the band-aid fix is killing SetupPickupsSet by emptying getter and setter.
-            // Consequence : Item Logbook game menu get emptied at each game restart, though tracking of unlocked items is still working. (tested it only with the crowbar unlock)
 
             /*IL.RoR2.UserProfile.ctor += il =>
             {
@@ -767,19 +765,48 @@ namespace ItemLib
                 cursor.Next.Operand = TotalItemCount + TotalEquipmentCount + CoinCount;
             };*/
 
+            // Making sure nothing get saved to the UserProfile so if the user decide to remove the custom items he doesn't get a corrupted profile.
+
             On.RoR2.UserProfile.SaveFieldAttribute.SetupPickupsSet += (orig, self, fieldInfo) =>
             {
                 self.getter = delegate(UserProfile userProfile)
                 {
-                    return "";
+                    bool[] pickupsSet = (bool[])fieldInfo.GetValue(userProfile);
+                    string result = "";
+                    for (int i = 0; i < (OriginalItemCount + OriginalEquipmentCount + CoinCount); i++)
+                    {
+                        var pickupIndex = PickupIndex.allPickups.ToList()[i];
+                        if (pickupsSet[pickupIndex.value] && GetCustomItem(pickupIndex.value) == null &&
+                            GetCustomEquipment(pickupIndex.value) == null)
+                        {
+                            result += pickupIndex.ToString();
+                            result += " ";
+                        }
+                    };
+                    return result;
                 };
                 self.setter = delegate (UserProfile userProfile, string valueString)
                 {
-
+                    bool[] array = (bool[])fieldInfo.GetValue(userProfile);
+                    Array.Clear(array, 0, 0);
+                    string[] array2 = valueString.Split(new char[]
+                    {
+                        ' '
+                    });
+                    for (int i = 0; i < array2.Length; i++)
+                    {
+                        PickupIndex pickupIndex = PickupIndex.Find(array2[i]);
+                        if (pickupIndex.isValid && GetCustomItem(pickupIndex.value) == null && GetCustomEquipment(pickupIndex.value) == null)
+                        {
+                            array[pickupIndex.value] = true;
+                        }
+                    }
                 };
                 self.copier = delegate (UserProfile srcProfile, UserProfile destProfile)
                 {
-
+                    Array sourceArray = (bool[])fieldInfo.GetValue(srcProfile);
+                    bool[] array = (bool[])fieldInfo.GetValue(destProfile);
+                    Array.Copy(sourceArray, array, array.Length);
                 };
             };
 

@@ -101,11 +101,17 @@ namespace ItemLib
             {
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
                 var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscEquipmentBarrel");
-                
-                
-                foreach (var pu in ItemLib.CustomItemList.Select(x => new RoR2.PickupIndex(x.ItemDef.itemIndex)))
+
+
+                /*foreach (var pu in ItemLib.CustomItemList.Select(x => new RoR2.PickupIndex(x.ItemDef.itemIndex)))
                 {
                     PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
+                }*/
+                var dropList = Run.instance.availableTier3DropList;
+                Debug.Log(dropList.Count);
+                foreach (var item in dropList)
+                {
+                    PickupDropletController.CreatePickupDroplet(item, trans.position, trans.forward * 20f);
                 }
 
                 var go = chest.DoSpawn(trans.position, trans.rotation);
