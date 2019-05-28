@@ -11,6 +11,11 @@ using RoR2.Stats;
 using Mono.Cecil.Cil;
 using R2API;
 using RoR2.UI;
+using RoR2.UI.LogBook;
+
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
 
 namespace ItemLib
 {
@@ -26,7 +31,7 @@ namespace ItemLib
                     GetAllCustomItemsAndEquipments();
                 return _customItemCount;
             }
-            private set { _customItemCount = value; }
+            private set => _customItemCount = value;
         }
         public static int TotalItemCount;
 
@@ -40,7 +45,7 @@ namespace ItemLib
                     GetAllCustomItemsAndEquipments();
                 return _customEquipmentCount;
             }
-            private set { _customEquipmentCount = value; }
+            private set => _customEquipmentCount = value;
         }
         public static int TotalEquipmentCount;
 
@@ -52,8 +57,8 @@ namespace ItemLib
         public static readonly List<CustomItem> CustomItemList = new List<CustomItem>();
         public static readonly List<CustomEquipment> CustomEquipmentList = new List<CustomEquipment>();
 
-        public static IReadOnlyDictionary<string, int> _itemReferences;
-        public static IReadOnlyDictionary<string, int> _equipmentReferences;
+        public static IReadOnlyDictionary<string, int> ItemReferences;
+        public static IReadOnlyDictionary<string, int> EquipmentReferences;
 
         public static bool CatalogInitialized;
 
@@ -80,7 +85,8 @@ namespace ItemLib
             // Also hooking on it execute body method, EmitDelegate not included.
 
             MethodInfo defineItems = typeof(ItemCatalog).GetMethod("DefineItems", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            defineItems.Invoke(null, null);
+            if (defineItems != null)
+                defineItems.Invoke(null, null);
 
             // real scary stuff
             ConstructorInfo defineEquipments = typeof(EquipmentCatalog).TypeInitializer;
@@ -94,7 +100,7 @@ namespace ItemLib
             if (!CatalogInitialized)
                 Initialize();
 
-            _itemReferences.TryGetValue(name, out var id);
+            ItemReferences.TryGetValue(name, out var id);
 
             return id;
         }
@@ -104,7 +110,7 @@ namespace ItemLib
             if (!CatalogInitialized)
                 Initialize();
 
-            _equipmentReferences.TryGetValue(name, out var id);
+            EquipmentReferences.TryGetValue(name, out var id);
 
             return id - TotalItemCount;
         }
@@ -122,12 +128,12 @@ namespace ItemLib
         public static CustomItem GetCustomItem(int indexValue)
         {
 
-            return GetCustomItem(_itemReferences.FirstOrDefault(x => x.Value == indexValue).Key);
+            return GetCustomItem(ItemReferences.FirstOrDefault(x => x.Value == indexValue).Key);
         }
 
         public static CustomEquipment GetCustomEquipment(int indexValue)
         {
-            return GetCustomEquipment(_equipmentReferences.FirstOrDefault(x => x.Value == indexValue).Key);
+            return GetCustomEquipment(EquipmentReferences.FirstOrDefault(x => x.Value == indexValue).Key);
         }
 
         public static void GetAllCustomItemsAndEquipments()
@@ -135,15 +141,14 @@ namespace ItemLib
             if (_customItemCount != 0 || _customEquipmentCount != 0)
                 return;
 
-            List<Assembly> allAssemblies = new List<Assembly>();
+            var allAssemblies = new List<Assembly>();
 
-            var path = System.IO.Directory.GetParent(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).FullName;
+            var path = Directory.GetParent(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).FullName;
 
             if (!path.EndsWith("ins"))
             {
                 Logger.Fatal("ItemLib should be placed in its own folder in the BepinEx \\plugins folder.");
             }
-                
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
             {
@@ -154,6 +159,7 @@ namespace ItemLib
             {
                 Type[] types = assembly.GetTypes();
 
+                // ReSharper disable once ForCanBeConvertedToForeach
                 for (int i = 0; i < types.Length; i++)
                 {
                     foreach (var methodInfo in types.SelectMany(x => x.GetMethods()))
@@ -216,13 +222,14 @@ namespace ItemLib
                     {
                         MethodInfo registerItem = typeof(ItemCatalog).GetMethod("RegisterItem", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                         object[] para = { (ItemIndex)(i + OriginalItemCount), CustomItemList[i].ItemDef };
-                        registerItem.Invoke(null, para);
+                        if (registerItem != null)
+                            registerItem.Invoke(null, para);
                         //Debug.Log("adding custom item at index : " + (i + OriginalItemCount));
 
                         tmp.Add(CustomItemList[i].ItemDef.nameToken , i + OriginalItemCount);
                     }
                     Logger.Info("[ItemLib] Added " + _customItemCount + " custom items");
-                    _itemReferences = new ReadOnlyDictionary<string, int>(tmp);
+                    ItemReferences = new ReadOnlyDictionary<string, int>(tmp);
                 });
             };
 
@@ -253,12 +260,13 @@ namespace ItemLib
                     {
                         MethodInfo registerEquipment = typeof(EquipmentCatalog).GetMethod("RegisterEquipment", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                         object[] para = { (EquipmentIndex)(i + OriginalEquipmentCount), CustomEquipmentList[i].EquipmentDef };
-                        registerEquipment.Invoke(null, para);
+                        if (registerEquipment != null)
+                            registerEquipment.Invoke(null, para);
 
                         tmp2.Add(CustomEquipmentList[i].EquipmentDef.nameToken, i + OriginalEquipmentCount + TotalItemCount);
                     }
                     Logger.Info("[ItemLib] Added " + _customEquipmentCount + " custom equipments");
-                    _equipmentReferences = new ReadOnlyDictionary<string, int>(tmp2);
+                    EquipmentReferences = new ReadOnlyDictionary<string, int>(tmp2);
                 });
             };
         }
@@ -429,18 +437,18 @@ namespace ItemLib
 
             // R2API.ItemDropAPI
 
-            var t1_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => (x.ItemDef.itemIndex)).ToArray();
-            var t2_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => (x.ItemDef.itemIndex)).ToArray();
-            var t3_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => (x.ItemDef.itemIndex)).ToArray();
-            var lunar_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => (x.ItemDef.itemIndex)).ToArray();
-            var boss_items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var t1Items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier1).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var t2Items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier2).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var t3Items = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Tier3).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var lunarItems = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => (x.ItemDef.itemIndex)).ToArray();
+            var bossItems = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => (x.ItemDef.itemIndex)).ToArray();
 
             var equipments = CustomEquipmentList.Select(x => (x.EquipmentDef.equipmentIndex)).ToArray();
-            ItemDropAPI.AddToDefaultByTier(ItemTier.Tier1, t1_items);
-            ItemDropAPI.AddToDefaultByTier(ItemTier.Tier2, t2_items);
-            ItemDropAPI.AddToDefaultByTier(ItemTier.Tier3, t3_items);
-            ItemDropAPI.AddToDefaultByTier(ItemTier.Lunar, lunar_items);
-            ItemDropAPI.AddToDefaultByTier(ItemTier.Boss, boss_items);
+            ItemDropAPI.AddToDefaultByTier(ItemTier.Tier1, t1Items);
+            ItemDropAPI.AddToDefaultByTier(ItemTier.Tier2, t2Items);
+            ItemDropAPI.AddToDefaultByTier(ItemTier.Tier3, t3Items);
+            ItemDropAPI.AddToDefaultByTier(ItemTier.Lunar, lunarItems);
+            ItemDropAPI.AddToDefaultByTier(ItemTier.Boss, bossItems);
 
             ItemDropAPI.AddToDefaultEquipment(equipments);
 
@@ -530,33 +538,6 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };
 
-            /*IL.RoR2.Stats.PerItemStatDef.ctor += il => // no work ? inlined ?
-            {
-                ILCursor cursor = new ILCursor(il);
-
-                cursor.GotoNext(
-                        i => i.MatchLdcI4(OriginalItemCount)
-                );
-                cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = _totalItemCount;
-            };*/
-
-            var instancesList = (List<PerItemStatDef>)typeof(PerItemStatDef)
-                .GetField("instancesList", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .GetValue(null);
-            foreach (PerItemStatDef instance in instancesList)
-            {
-                typeof(PerItemStatDef).GetField("keyToStatDef", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(instance, new StatDef[OriginalItemCount + CustomItemCount]);
-            }
-
-            var instancesList_2 = (List<PerEquipmentStatDef>)typeof(PerEquipmentStatDef)
-                .GetField("instancesList", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-                .GetValue(null);
-            foreach (PerEquipmentStatDef instance in instancesList_2)
-            {
-                typeof(PerEquipmentStatDef).GetField("keyToStatDef", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(instance, new StatDef[OriginalEquipmentCount + CustomEquipmentCount]);
-            }
-
             IL.RoR2.RunReport.PlayerInfo.ctor += il =>
             {
                 ILCursor cursor = new ILCursor(il);
@@ -584,7 +565,7 @@ namespace ItemLib
             typeof(PickupIndex).SetFieldValue("lunarCoin1", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount));
             typeof(PickupIndex).SetFieldValue("last", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount));
             typeof(PickupIndex).SetFieldValue("end", new PickupIndex((ItemIndex)TotalItemCount + TotalEquipmentCount + CoinCount));
-            typeof(PickupIndex).SetFieldValue("none", new PickupIndex((ItemIndex)(-1))); // this is real fucking fuckery fuck.
+            typeof(PickupIndex).SetFieldValue("none", new PickupIndex((ItemIndex)(-1))); // needed apparently.
 
             // ItemMask
 
@@ -621,8 +602,9 @@ namespace ItemLib
                 cursor.Next.Operand = TotalItemCount;
             };
 
-            ItemMask all = (ItemMask) typeof(ItemMask)
-                .GetField("all", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+            // ReSharper disable once PossibleNullReferenceException
+            var all = (ItemMask) typeof(ItemMask)
+                .GetField("all", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(null);
             for (int i = OriginalItemCount; i < TotalItemCount; i++)
                 all.AddItem((ItemIndex)i);
 
@@ -661,10 +643,12 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };
 
-            EquipmentMask all_2 = (EquipmentMask)typeof(EquipmentMask)
-                .GetField("all", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).GetValue(null);
+            // ReSharper disable once PossibleNullReferenceException
+            EquipmentMask all2 = (EquipmentMask)typeof(EquipmentMask)
+                .GetField("all", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                ?.GetValue(null);
             for (int i = OriginalEquipmentCount; i < TotalEquipmentCount; i++)
-                all_2.AddEquipment((EquipmentIndex)i);
+                all2.AddEquipment((EquipmentIndex)i);
 
             // CharacterModel
 
@@ -745,14 +729,15 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };
 
-            // this is good shit
+            // yes
             ConstructorInfo ruleCatalogcctor = typeof(RuleCatalog).TypeInitializer;
             ruleCatalogcctor.Invoke(null, null);
 
             // bug UserProfile
 
-            // Ok so this one is kinda a problem : extending the discoveredPickups bool array make it so Rewired cannot put any mouse / kb / gamepad mapping into save files,
+            // Ok so this one is kinda a problem : extending the discoveredPickups bool array make it so Rewired cannot put any mouse / kb / game pad mapping into save files,
             // Why it does that, i don't know.
+            // We probably won't ever need to fix it though if we don't want to mess up saves.
 
             /*IL.RoR2.UserProfile.ctor += il =>
             {
@@ -767,6 +752,7 @@ namespace ItemLib
 
             // Making sure nothing get saved to the UserProfile so if the user decide to remove the custom items he doesn't get a corrupted profile.
 
+            // Disable DiscoveredPickups field in UserProfile for custom items
             On.RoR2.UserProfile.SaveFieldAttribute.SetupPickupsSet += (orig, self, fieldInfo) =>
             {
                 self.getter = delegate(UserProfile userProfile)
@@ -782,20 +768,18 @@ namespace ItemLib
                             result += pickupIndex.ToString();
                             result += " ";
                         }
-                    };
+                    }
+
                     return result;
                 };
                 self.setter = delegate (UserProfile userProfile, string valueString)
                 {
                     bool[] array = (bool[])fieldInfo.GetValue(userProfile);
                     Array.Clear(array, 0, 0);
-                    string[] array2 = valueString.Split(new char[]
+                    string[] array2 = valueString.Split(' ');
+                    foreach (var name in array2)
                     {
-                        ' '
-                    });
-                    for (int i = 0; i < array2.Length; i++)
-                    {
-                        PickupIndex pickupIndex = PickupIndex.Find(array2[i]);
+                        PickupIndex pickupIndex = PickupIndex.Find(name);
                         if (pickupIndex.isValid && GetCustomItem(pickupIndex.value) == null && GetCustomEquipment(pickupIndex.value) == null)
                         {
                             array[pickupIndex.value] = true;
@@ -809,6 +793,222 @@ namespace ItemLib
                     Array.Copy(sourceArray, array, array.Length);
                 };
             };
+
+            On.RoR2.UserProfile.DiscoverPickup += (orig, self, pickupIndex) =>
+            {
+                if (GetCustomItem(pickupIndex.value) == null && GetCustomEquipment(pickupIndex.value) == null)
+                {
+                    return;
+                }
+
+                orig(self, pickupIndex);
+            };
+
+            // Il is obviously cleaner here but who is seriously gonna mess with this method except for an item API?
+            // Disable field making for totalCollected and highestCollected for custom items
+            On.RoR2.Stats.PerItemStatDef.RegisterStatDefs += (orig) =>
+            {
+                var instancesList = R2API.Utils.Reflection.GetFieldValue<List<PerItemStatDef>>(typeof(PerItemStatDef), "instancesList");
+                foreach (PerItemStatDef perItemStatDef in instancesList)
+                {
+                    var prefix = R2API.Utils.Reflection.GetFieldValue<string>(perItemStatDef, "prefix");
+                    var recordType = R2API.Utils.Reflection.GetFieldValue<StatRecordType>(perItemStatDef, "recordType");
+                    var dataType = R2API.Utils.Reflection.GetFieldValue<StatDataType>(perItemStatDef, "dataType");
+                    var keyToStatDef = R2API.Utils.Reflection.GetFieldValue<StatDef[]>(perItemStatDef, "keyToStatDef");
+                    foreach (ItemIndex itemIndex in ItemCatalog.allItems)
+                    {
+                        if((int)itemIndex >= OriginalItemCount)
+                            continue;
+                        StatDef statDef = StatDef.Register(prefix + "." + itemIndex.ToString(), recordType, dataType, 0.0);
+                        keyToStatDef[(int)itemIndex] = statDef;
+                    }
+                }
+            };
+
+            On.RoR2.Stats.StatManager.OnServerItemGiven += (orig, inventory, itemIndex, quantity) =>
+            {
+                if ((int)itemIndex >= OriginalItemCount)
+                    return;
+                orig(inventory, itemIndex, quantity);
+            };
+
+            // LogBook. So for now we disable the logbook for custom items, since logbook is kinda linked to the data from the UserProfile,
+            // an alternative would be to have a reserved data file for custom items somewhere so we never interact directly with the so fragile UserProfile of the users.
+            // That way we could have a logbook working for custom items too !
+            // For now lets assume the user unlocked / discovered the item so we can see 3d models on it :)
+
+            // It normally check if we have at least picked it up once / unlocked the linked achievement for it.
+            // Default to available for custom items for now
+            On.RoR2.UI.LogBook.LogBookController.GetPickupStatus += (orig, userProfile, entry) =>
+            {
+                if (GetCustomItem(((PickupIndex)entry.extraData).value) != null || GetCustomEquipment(((PickupIndex)entry.extraData).value) != null)
+                {
+                    return EntryStatus.Available;
+                }
+                return orig(userProfile, entry);
+            };
+
+            // This one normally interact with the UserProfile (PerItemStatDef) to get how many times we found the item and how far the user managed to stack it in a single run
+            On.RoR2.UI.LogBook.PageBuilder.AddSimplePickup += (orig, self, pickupIndex) =>
+            {
+                if (GetCustomItem(pickupIndex.value) != null || GetCustomEquipment(pickupIndex.value) != null)
+                {
+                    ItemIndex itemIndex = pickupIndex.itemIndex;
+                    EquipmentIndex equipmentIndex = pickupIndex.equipmentIndex;
+                    string token = null;
+                    if (itemIndex != ItemIndex.None)
+                    {
+                        ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
+                        self.AddDescriptionPanel(Language.GetString(itemDef.descriptionToken));
+                        token = itemDef.loreToken;
+                        //ulong statValueULong = get from custom file;
+                        //ulong statValueULong2 = get from custom file;
+                        string stringFormatted = Language.GetStringFormatted("GENERIC_PREFIX_FOUND", "Unknown");
+                        string stringFormatted2 = Language.GetStringFormatted("ITEM_PREFIX_STACKCOUNT", "Unknown");
+                        self.AddSimpleTextPanel(stringFormatted, stringFormatted2);
+                    }
+                    else if (equipmentIndex != EquipmentIndex.None)
+                    {
+                        EquipmentDef equipmentDef = EquipmentCatalog.GetEquipmentDef(equipmentIndex);
+                        self.AddDescriptionPanel(Language.GetString(equipmentDef.descriptionToken));
+                        token = equipmentDef.loreToken;
+                        string stringFormatted3 = Language.GetStringFormatted("EQUIPMENT_PREFIX_TOTALTIMEHELD", "Unknown");
+                        string stringFormatted4 = Language.GetStringFormatted("EQUIPMENT_PREFIX_USECOUNT", "Unknown");
+                        self.AddSimpleTextPanel(stringFormatted3, stringFormatted4);
+                    }
+                    // ReSharper disable once AssignNullToNotNullAttribute
+                    self.AddNotesPanel(Language.IsTokenInvalid(token) ? Language.GetString("EARLY_ACCESS_LORE") : Language.GetString(token));
+                }
+                else
+                {
+                    orig(self, pickupIndex);
+                }
+            };
+
+            // make it unlocked no matter what for custom items
+            On.RoR2.UI.LogBook.LogBookController.GetPickupTooltipContent += (orig, userProfile, entry, status) =>
+            {
+                if (GetCustomItem(((PickupIndex)entry.extraData).value) != null || GetCustomEquipment(((PickupIndex)entry.extraData).value) != null)
+                {
+                    UnlockableDef unlockableDef = UnlockableCatalog.GetUnlockableDef(((PickupIndex)entry.extraData).GetUnlockableName());
+                    TooltipContent result = default;
+                    result.titleToken = entry.nameToken;
+                    result.titleColor = entry.color;
+                    if (unlockableDef != null)
+                    {
+                        result.overrideBodyText = unlockableDef.getUnlockedString();
+                    }
+                    result.bodyToken = "LOGBOOK_CATEGORY_ITEM";
+                    result.bodyColor = ColorCatalog.GetColor(ColorCatalog.ColorIndex.Unlockable);
+                    return result;
+                }
+                return orig(userProfile, entry, status);
+            };
+
+            // IL is calling virt methods for the linq where lol, i'll do IL another day 
+            // What we do here : Restrict first Entry IEnumerable to < originalItemCount and concat a new one to the first for custom items
+            On.RoR2.UI.LogBook.LogBookController.BuildPickupEntries += (orig) =>
+            {
+                var getUnimplemented =
+                    R2API.Utils.Reflection.GetMethodCached(typeof(LogBookController), "GetUnimplemented");
+                var getWipTooltipContent =
+                    R2API.Utils.Reflection.GetMethodCached(typeof(LogBookController), "GetWIPTooltipContent");
+                var getPickupStatus =
+                    R2API.Utils.Reflection.GetMethodCached(typeof(LogBookController), "GetPickupStatus");
+                var getPickupTooltipContent =
+                    R2API.Utils.Reflection.GetMethodCached(typeof(LogBookController), "GetPickupTooltipContent");
+
+                Entry entry = new Entry
+                {
+                    nameToken = "TOOLTIP_WIP_CONTENT_NAME",
+                    color = Color.white,
+                    iconTexture = Resources.Load<Texture>("Textures/MiscIcons/texWIPIcon"),
+                    getStatus = (Func<UserProfile, Entry, EntryStatus>) Delegate.CreateDelegate(
+                        typeof(Func<UserProfile, Entry, EntryStatus>), getUnimplemented),
+                    getTooltipContent = (Func<UserProfile, Entry, EntryStatus, TooltipContent>) Delegate.CreateDelegate(
+                        typeof(Func<UserProfile, Entry, EntryStatus, TooltipContent>), getWipTooltipContent)
+                };
+                IEnumerable <Entry> first = from itemDef in PickupIndex.allPickups.Select(delegate (PickupIndex pickupIndex)
+                {
+                    PickupIndex pickupIndex2 = pickupIndex;
+                    return ItemCatalog.GetItemDef(pickupIndex2.itemIndex);
+                })
+                                           where itemDef != null && itemDef.inDroppableTier && itemDef.itemIndex < ItemIndex.Count
+                                           orderby (int)(itemDef.tier + ((itemDef.tier == ItemTier.Lunar) ? 100 : 0))
+                                           select new Entry
+                                           {
+                                               nameToken = itemDef.nameToken,
+                                               categoryTypeToken = "LOGBOOK_CATEGORY_ITEM",
+                                               color = ColorCatalog.GetColor(itemDef.darkColorIndex),
+                                               iconTexture = itemDef.pickupIconTexture,
+                                               bgTexture = itemDef.bgIconTexture,
+                                               extraData = new PickupIndex(itemDef.itemIndex),
+                                               modelPrefab = Resources.Load<GameObject>(itemDef.pickupModelPath),
+                                               getStatus = (Func<UserProfile, Entry, EntryStatus>)Delegate.CreateDelegate(typeof(Func<UserProfile, Entry, EntryStatus>), getPickupStatus),
+                                               getTooltipContent = (Func<UserProfile, Entry, EntryStatus, TooltipContent>)Delegate.CreateDelegate(
+                                                   typeof(Func<UserProfile, Entry, EntryStatus, TooltipContent>), getPickupTooltipContent),
+                                               addEntries = PageBuilder.SimplePickup,
+                                               isWIP = Language.IsTokenInvalid(itemDef.loreToken)
+                                           };
+                IEnumerable<Entry> customItemsEntries = from itemDef in PickupIndex.allPickups.Select(delegate (PickupIndex pickupIndex)
+                {
+                    PickupIndex pickupIndex2 = pickupIndex;
+                    return ItemCatalog.GetItemDef(pickupIndex2.itemIndex);
+                })
+                                           where itemDef != null && itemDef.inDroppableTier && itemDef.itemIndex >= ItemIndex.Count
+                                           orderby (int)(itemDef.tier + ((itemDef.tier == ItemTier.Lunar) ? 100 : 0))
+                                           select new Entry
+                                           {
+                                               nameToken = itemDef.nameToken,
+                                               categoryTypeToken = "LOGBOOK_CATEGORY_ITEM",
+                                               color = ColorCatalog.GetColor(itemDef.darkColorIndex),
+                                               iconTexture = (Texture)GetCustomItem(itemDef.nameToken).Icon,
+                                               bgTexture = itemDef.bgIconTexture,
+                                               extraData = new PickupIndex(itemDef.itemIndex),
+                                               modelPrefab = GetCustomItem(itemDef.nameToken).Prefab,
+                                               getStatus = (Func<UserProfile, Entry, EntryStatus>)Delegate.CreateDelegate(typeof(Func<UserProfile, Entry, EntryStatus>), getPickupStatus),
+                                               getTooltipContent = (Func<UserProfile, Entry, EntryStatus, TooltipContent>)Delegate.CreateDelegate(
+                                                   typeof(Func<UserProfile, Entry, EntryStatus, TooltipContent>), getPickupTooltipContent),
+                                               addEntries = PageBuilder.SimplePickup,
+                                               isWIP = Language.IsTokenInvalid(itemDef.loreToken)
+                                           };
+                first = first.Concat(customItemsEntries);
+                IEnumerable<Entry> second = from equipmentDef in PickupIndex.allPickups.Select(delegate (PickupIndex pickupIndex)
+                {
+                    PickupIndex pickupIndex2 = pickupIndex;
+                    if (EquipmentCatalog.GetEquipmentDef(pickupIndex2.equipmentIndex) != null && pickupIndex2.value < TotalItemCount + OriginalEquipmentCount)
+                    {
+                        return EquipmentCatalog.GetEquipmentDef(pickupIndex2.equipmentIndex);
+                    }
+
+                    return null;
+                })
+                                            where equipmentDef != null && equipmentDef.canDrop
+                                            orderby !equipmentDef.isLunar
+                                            select new Entry
+                                            {
+                                                nameToken = equipmentDef.nameToken,
+                                                categoryTypeToken = "LOGBOOK_CATEGORY_EQUIPMENT",
+                                                color = ColorCatalog.GetColor(equipmentDef.colorIndex),
+                                                iconTexture = equipmentDef.pickupIconTexture,
+                                                bgTexture = equipmentDef.bgIconTexture,
+                                                extraData = new PickupIndex(equipmentDef.equipmentIndex),
+                                                modelPrefab = Resources.Load<GameObject>(equipmentDef.pickupModelPath),
+                                                getStatus = (Func<UserProfile, Entry, EntryStatus>)Delegate.CreateDelegate(typeof(Func<UserProfile, Entry, EntryStatus>), getPickupStatus),
+                                                getTooltipContent = (Func<UserProfile, Entry, EntryStatus, TooltipContent>)Delegate.CreateDelegate(
+                                                    typeof(Func<UserProfile, Entry, EntryStatus, TooltipContent>), getPickupTooltipContent),
+                                                addEntries = PageBuilder.SimplePickup,
+                                                isWIP = Language.IsTokenInvalid(equipmentDef.loreToken)
+                                            };
+                IEnumerable<Entry> enumerable = first.Concat(second);
+                var entries = enumerable as Entry[] ?? enumerable.ToArray();
+                int count = Math.Max(120 - entries.Length, 0);
+                IEnumerable<Entry> second2 = Enumerable.Repeat(entry, count);
+                enumerable = entries.Concat(second2);
+                return enumerable.ToArray();
+            };
+
+            // Icon and Prefab loading stuff
 
             IL.RoR2.Orbs.ItemTakenOrbEffect.Start += il =>
             {
@@ -1049,7 +1249,7 @@ namespace ItemLib
             {
                 ILCursor cursor = new ILCursor(il);
                 string name = null;
-                EquipmentDef equipDef_arg = null;
+                EquipmentDef equipDefArg = null;
                 EquipmentIcon instance = null;
 
                 cursor.GotoNext(
@@ -1061,9 +1261,9 @@ namespace ItemLib
 
                 cursor.EmitDelegate<Func<EquipmentDef, EquipmentDef>>((self) =>
                 {
-                    equipDef_arg = self;
-                    if(equipDef_arg != null)
-                        name = equipDef_arg.nameToken;
+                    equipDefArg = self;
+                    if(equipDefArg != null)
+                        name = equipDefArg.nameToken;
                     return self;
                 });
 
@@ -1088,7 +1288,7 @@ namespace ItemLib
                         var currentCustomEquipment = GetCustomEquipment(name);
                         if (currentCustomEquipment != null && currentCustomEquipment.Icon != null)
                         {
-                            if (equipDef_arg != null)
+                            if (equipDefArg != null)
                                 instance.iconImage.texture = (Texture)currentCustomEquipment.Icon;
                         }
                     }

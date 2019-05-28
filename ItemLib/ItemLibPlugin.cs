@@ -1,10 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using BepInEx;
-using R2API;
 using RoR2;
 using UnityEngine;
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedParameter.Local
 
 namespace ItemLib
 {
@@ -12,7 +13,7 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        public const string ModVer = "0.0.9";
+        public const string ModVer = "0.0.10";
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
@@ -52,19 +53,16 @@ namespace ItemLib
             Inventory inventory = player != null ? player.master.inventory : args.sender.master.inventory;
 
 
-            int itemCount = 1;
-            if (!int.TryParse(countString, out itemCount))
+            if (!int.TryParse(countString, out var itemCount))
             {
                 itemCount = 1;
             }
 
-            int itemIndex = 0;
-            ItemIndex itemType = ItemIndex.Syringe;
-            if (int.TryParse(indexString, out itemIndex))
+            if (int.TryParse(indexString, out var itemIndex))
             {
                 if (itemIndex < (ItemLib.TotalItemCount + ItemLib.TotalEquipmentCount) && itemIndex >= 0)
                 {
-                    itemType = (ItemIndex) itemIndex;
+                    var itemType = (ItemIndex) itemIndex;
                     inventory.GiveItem(itemType, itemCount);
                 }
             }
@@ -102,11 +100,11 @@ namespace ItemLib
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
                 var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscEquipmentBarrel");
 
-
                 /*foreach (var pu in ItemLib.CustomItemList.Select(x => new RoR2.PickupIndex(x.ItemDef.itemIndex)))
                 {
                     PickupDropletController.CreatePickupDroplet(pu, trans.position, trans.forward * 20f);
                 }*/
+
                 var dropList = Run.instance.availableTier3DropList;
                 Debug.Log(dropList.Count);
                 foreach (var item in dropList)
@@ -114,19 +112,15 @@ namespace ItemLib
                     PickupDropletController.CreatePickupDroplet(item, trans.position, trans.forward * 20f);
                 }
 
-                var go = chest.DoSpawn(trans.position, trans.rotation);
-                //var chestbeha = go.GetComponent<ChestBehavior>();
-                //chestbeha.Open();
+                chest.DoSpawn(trans.position, trans.rotation);
             }
         }
 #endif
         private static NetworkUser GetNetUserFromString(string playerString)
         {
-            int result = 0;
-
             if (playerString != "")
             {
-                if (int.TryParse(playerString, out result))
+                if (int.TryParse(playerString, out var result))
                 {
                     if (result < NetworkUser.readOnlyInstancesList.Count && result >= 0)
                     {

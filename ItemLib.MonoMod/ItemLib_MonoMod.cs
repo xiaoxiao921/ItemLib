@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using ItemLib;
 using MonoMod;
 using UnityEngine;
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+// ReSharper disable CheckNamespace
+// ReSharper disable CollectionNeverQueried.Global
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace RoR2
 {
@@ -63,7 +66,7 @@ namespace RoR2
             }
         }
 
-        // no use until UserProfile fix
+        // no use because its tied to UserProfile and nothing else
 
         /*public bool isValid
         {

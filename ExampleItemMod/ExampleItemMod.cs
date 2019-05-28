@@ -4,7 +4,10 @@ using System.Reflection;
 using BepInEx;
 using ItemLib;
 using RoR2;
+using RoR2.Projectile;
 using UnityEngine;
+
+// ReSharper disable UnusedMember.Global
 
 namespace ExampleItemMod
 {
@@ -31,7 +34,7 @@ namespace ExampleItemMod
             On.RoR2.EquipmentSlot.PerformEquipmentAction += (orig, self, equipmentIndex) =>
             {
                 Debug.Log((int)equipmentIndex);
-                Debug.Log((int)_myCustomItemId);
+                Debug.Log(_myCustomItemId);
                 if ((int) equipmentIndex == _myCustomItemId)
                 {
                     DetonateAlive(100);
@@ -43,25 +46,32 @@ namespace ExampleItemMod
 
         private static void DetonateAlive(float radius)
         {
-            var currBody = RoR2.CameraRigController.readOnlyInstancesList.First().viewer.masterController.master.GetBody();
+            var currentBody = CameraRigController.readOnlyInstancesList.First().viewer.masterController.master.GetBody();
             var stickyBomb = (GameObject)Resources.Load("Prefabs/Projectiles/StickyBomb");
 
             ReadOnlyCollection<TeamComponent> teamMembers = TeamComponent.GetTeamMembers(TeamIndex.Monster);
-            for (int i = 0; i < teamMembers.Count; i++)
+            foreach (var t in teamMembers)
             {
-                float sqrDistance = Vector3.SqrMagnitude(teamMembers[i].transform.position - currBody.transform.position);
+                float sqrDistance = Vector3.SqrMagnitude(t.transform.position - currentBody.transform.position);
                 if (sqrDistance <= (radius * radius))
                 {
-                    Vector3 position = currBody.transform.position;
-                    Vector3 forward = teamMembers[i].transform.position - position;
-                    Quaternion rotation = (forward.magnitude != 0f) ? Util.QuaternionSafeLookRotation(forward) : UnityEngine.Random.rotationUniform;
-                    RoR2.Projectile.ProjectileManager.instance.FireProjectile(stickyBomb, teamMembers[i].transform.position, rotation, currBody.gameObject, currBody.damage * 40, 100f, RoR2.Util.CheckRoll(currBody.crit, currBody.master), DamageColorIndex.Item, null, forward.magnitude * 60f);
+                    Vector3 position = currentBody.transform.position;
+                    Vector3 forward = t.transform.position - position;
+                    Quaternion rotation = forward.magnitude != 0f
+                        ? Util.QuaternionSafeLookRotation(forward)
+                        : Random.rotationUniform;
+#pragma warning disable 618
+                    ProjectileManager.instance.FireProjectile(stickyBomb,
+#pragma warning restore 618
+                        t.transform.position, rotation, currentBody.gameObject, currentBody.damage * 40, 100f,
+                        Util.CheckRoll(currentBody.crit, currentBody.master), DamageColorIndex.Item, null,
+                        forward.magnitude * 60f);
                 }
             }
         }
 
         [Item(ItemAttribute.ItemType.Equipment)]
-        public static ItemLib.CustomEquipment Test()
+        public static CustomEquipment Test()
         {
             // Load the AssetBundle you made with the Unity Editor
 
