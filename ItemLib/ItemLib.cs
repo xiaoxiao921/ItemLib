@@ -825,6 +825,7 @@ namespace ItemLib
                 }
             };
 
+            // Normally push values to the StatSheet about the item (totalCollected etc). Saves to UserProfile
             On.RoR2.Stats.StatManager.OnServerItemGiven += (orig, inventory, itemIndex, quantity) =>
             {
                 if ((int)itemIndex >= OriginalItemCount)
@@ -872,6 +873,8 @@ namespace ItemLib
                         EquipmentDef equipmentDef = EquipmentCatalog.GetEquipmentDef(equipmentIndex);
                         self.AddDescriptionPanel(Language.GetString(equipmentDef.descriptionToken));
                         token = equipmentDef.loreToken;
+                        // this.statSheet.GetStatDisplayValue(PerEquipmentStatDef.totalTimeHeld.FindStatDef(equipmentIndex))
+                        // this.statSheet.GetStatDisplayValue(PerEquipmentStatDef.totalTimesFired.FindStatDef(equipmentIndex))
                         string stringFormatted3 = Language.GetStringFormatted("EQUIPMENT_PREFIX_TOTALTIMEHELD", "Unknown");
                         string stringFormatted4 = Language.GetStringFormatted("EQUIPMENT_PREFIX_USECOUNT", "Unknown");
                         self.AddSimpleTextPanel(stringFormatted3, stringFormatted4);

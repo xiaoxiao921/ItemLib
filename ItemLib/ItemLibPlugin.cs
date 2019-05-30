@@ -17,6 +17,10 @@ namespace ItemLib
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
+#if DEBUG
+        private static GameObject chest;
+#endif
+
         public ItemLibPlugin()
         {
             InitLogger();
@@ -98,7 +102,7 @@ namespace ItemLib
             if (Input.GetKeyDown(KeyCode.F3))
             {
                 var trans = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
-                var chest = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscEquipmentBarrel");
+                var chestPrefab = Resources.Load<SpawnCard>("SpawnCards/InteractableSpawnCard/iscEquipmentBarrel");
 
                 /*foreach (var pu in ItemLib.CustomItemList.Select(x => new RoR2.PickupIndex(x.ItemDef.itemIndex)))
                 {
@@ -112,7 +116,12 @@ namespace ItemLib
                     PickupDropletController.CreatePickupDroplet(item, trans.position, trans.forward * 20f);
                 }
 
-                chest.DoSpawn(trans.position, trans.rotation);
+                chest = chestPrefab.DoSpawn(trans.position, trans.rotation);
+            }
+
+            if (Input.GetKeyDown(KeyCode.F4))
+            {
+                chest.GetComponent<ChestBehavior>().Open();
             }
         }
 #endif
