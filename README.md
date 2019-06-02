@@ -13,7 +13,7 @@ ItemLib is a BepinEx plugin and a Monomod patch, that will also be used as an as
 ### Installing ItemLib
 
 - [Install BepInEx](https://thunderstore.io/package/bbepis/BepInExPack)
-- Download the latest [release](https://github.com/xiaoxiao921/ItemLib/releases)
+- Download the latest [release](https://thunderstore.io/package/xiaoxiao921/ItemLib/)
 - Follow the instructions there.
 
 ## Project Setup
@@ -30,8 +30,10 @@ You may have to fix the assembly reference `ItemLib.dll` for the ExampleItemMod 
 Once your project is ready you'll want to have a method defined that will return a CustomItem / CustomEquipment object and have an Item Attribute at the top so that the library can load it. \
 Depending on what you want (item or equipment) you'll want to change the ItemType (enum) in the attribute. \
 Leave both `pickupModelPath` and/or `pickupIconPath` empty if you want to have a custom prefab / icon for your item. \
-For having a custom prefab and icon you will need to make an AssetBundle in Unity. \
+For having a custom prefab and icon you will need to make an AssetBundle in Unity, you could also download the unitypackage and use it as an example. \
+
 A class example for a BepinEx mod is available [here](https://github.com/xiaoxiao921/ItemLib/blob/master/ExampleItemMod/ExampleItemMod.cs)
+An AssetBundle project example is available [here](https://github.com/xiaoxiao921/ItemLib/blob/master/ExampleItemMod/ExampleItemMod.cs)
 
 
 #### Custom Item Method Example
