@@ -18,7 +18,7 @@ namespace ItemLib
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
 #if DEBUG
-        private static GameObject chest;
+        private static GameObject _chest;
 #endif
 
         public ItemLibPlugin()
@@ -116,12 +116,12 @@ namespace ItemLib
                     PickupDropletController.CreatePickupDroplet(item, trans.position, trans.forward * 20f);
                 }
 
-                chest = chestPrefab.DoSpawn(trans.position, trans.rotation);
+                _chest = chestPrefab.DoSpawn(trans.position, trans.rotation);
             }
 
             if (Input.GetKeyDown(KeyCode.F4))
             {
-                chest.GetComponent<ChestBehavior>().Open();
+                _chest.GetComponent<ChestBehavior>().Open();
             }
         }
 #endif

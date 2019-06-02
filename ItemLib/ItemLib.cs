@@ -934,7 +934,12 @@ namespace ItemLib
                 IEnumerable <Entry> first = from itemDef in PickupIndex.allPickups.Select(delegate (PickupIndex pickupIndex)
                 {
                     PickupIndex pickupIndex2 = pickupIndex;
-                    return ItemCatalog.GetItemDef(pickupIndex2.itemIndex);
+                    if (ItemCatalog.GetItemDef(pickupIndex2.itemIndex) != null && pickupIndex2.value < OriginalItemCount)
+                    {
+                        return ItemCatalog.GetItemDef(pickupIndex2.itemIndex);
+                    }
+
+                    return null;
                 })
                                            where itemDef != null && itemDef.inDroppableTier && itemDef.itemIndex < ItemIndex.Count
                                            orderby (int)(itemDef.tier + ((itemDef.tier == ItemTier.Lunar) ? 100 : 0))
@@ -956,7 +961,12 @@ namespace ItemLib
                 IEnumerable<Entry> customItemsEntries = from itemDef in PickupIndex.allPickups.Select(delegate (PickupIndex pickupIndex)
                 {
                     PickupIndex pickupIndex2 = pickupIndex;
-                    return ItemCatalog.GetItemDef(pickupIndex2.itemIndex);
+                    if (ItemCatalog.GetItemDef(pickupIndex2.itemIndex) != null && pickupIndex2.value >= OriginalItemCount)
+                    {
+                        return ItemCatalog.GetItemDef(pickupIndex2.itemIndex);
+                    }
+
+                    return null;
                 })
                                            where itemDef != null && itemDef.inDroppableTier && itemDef.itemIndex >= ItemIndex.Count
                                            orderby (int)(itemDef.tier + ((itemDef.tier == ItemTier.Lunar) ? 100 : 0))
@@ -1003,6 +1013,34 @@ namespace ItemLib
                                                 addEntries = PageBuilder.SimplePickup,
                                                 isWIP = Language.IsTokenInvalid(equipmentDef.loreToken)
                                             };
+                IEnumerable<Entry> customEquipmentsEntries = from equipmentDef in PickupIndex.allPickups.Select(delegate (PickupIndex pickupIndex)
+                {
+                    PickupIndex pickupIndex2 = pickupIndex;
+                    if (EquipmentCatalog.GetEquipmentDef(pickupIndex2.equipmentIndex) != null && pickupIndex2.value >= TotalItemCount + OriginalEquipmentCount)
+                    {
+                        return EquipmentCatalog.GetEquipmentDef(pickupIndex2.equipmentIndex);
+                    }
+
+                    return null;
+                })
+                                            where equipmentDef != null && equipmentDef.canDrop
+                                            orderby !equipmentDef.isLunar
+                                            select new Entry
+                                            {
+                                                nameToken = equipmentDef.nameToken,
+                                                categoryTypeToken = "LOGBOOK_CATEGORY_EQUIPMENT",
+                                                color = ColorCatalog.GetColor(equipmentDef.colorIndex),
+                                                iconTexture = (Texture)GetCustomEquipment(equipmentDef.nameToken).Icon,
+                                                bgTexture = equipmentDef.bgIconTexture,
+                                                extraData = new PickupIndex(equipmentDef.equipmentIndex),
+                                                modelPrefab = GetCustomEquipment(equipmentDef.nameToken).Prefab,
+                                                getStatus = (Func<UserProfile, Entry, EntryStatus>)Delegate.CreateDelegate(typeof(Func<UserProfile, Entry, EntryStatus>), getPickupStatus),
+                                                getTooltipContent = (Func<UserProfile, Entry, EntryStatus, TooltipContent>)Delegate.CreateDelegate(
+                                                    typeof(Func<UserProfile, Entry, EntryStatus, TooltipContent>), getPickupTooltipContent),
+                                                addEntries = PageBuilder.SimplePickup,
+                                                isWIP = Language.IsTokenInvalid(equipmentDef.loreToken)
+                                            };
+                second = second.Concat(customEquipmentsEntries);
                 IEnumerable<Entry> enumerable = first.Concat(second);
                 var entries = enumerable as Entry[] ?? enumerable.ToArray();
                 int count = Math.Max(120 - entries.Length, 0);
