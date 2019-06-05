@@ -145,9 +145,10 @@ namespace ItemLib
 
             var path = Directory.GetParent(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).FullName;
 
-            if (!path.EndsWith("ins"))
+            while (!path.EndsWith("ins"))
             {
-                Logger.Fatal("ItemLib should be placed in its own folder in the BepinEx \\plugins folder.");
+                path = Directory.GetParent(path).FullName;
+                Logger.Fatal("ItemLib should be placed in its own folder in the BepinEx \\plugins folder. Path should be optimally looking like this : plugins\\ItemLib\\ItemLib.dll");
             }
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
