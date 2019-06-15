@@ -148,7 +148,7 @@ namespace ItemLib
             while (!path.EndsWith("ins"))
             {
                 path = Directory.GetParent(path).FullName;
-                Logger.Fatal("ItemLib should be placed in its own folder in the BepinEx \\plugins folder. Path should be optimally looking like this : plugins\\ItemLib\\ItemLib.dll");
+                Logger.Warning("ItemLib should be placed in its own folder in the BepinEx \\plugins folder. Path should be optimally looking like this : plugins\\ItemLib\\ItemLib.dll");
             }
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
@@ -302,6 +302,36 @@ namespace ItemLib
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(OriginalItemCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalItemCount;
+            };
+
+            // NetworkExtensions. Needed for GetItemCount / itemStacks on the inventory.
+
+            IL.RoR2.NetworkExtensions.WriteItemStacks += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalItemCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalItemCount;
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalItemCount)
+                );
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalItemCount;
+            };
+
+            IL.RoR2.NetworkExtensions.ReadItemStacks += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(OriginalItemCount)
                 );
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = TotalItemCount;
