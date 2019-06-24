@@ -79,7 +79,7 @@ namespace RoR2
         public GameObject GetPickupDisplayPrefab()
         {
             // Check if the custom item has a custom prefab.
-            
+
             var currentCustomItem = ItemLib.ItemLib.GetCustomItem(value);
             if (currentCustomItem != null && currentCustomItem.Prefab != null)
             {
