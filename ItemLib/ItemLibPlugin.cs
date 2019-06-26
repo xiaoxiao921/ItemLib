@@ -116,7 +116,7 @@ namespace ItemLib
                     PickupDropletController.CreatePickupDroplet(item, trans.position, trans.forward * 20f);
                 }
 
-                _chest = chestPrefab.DoSpawn(trans.position, trans.rotation);
+                _chest = chestPrefab.DoSpawn(trans.position, trans.rotation, null);
             }
 
             if (Input.GetKeyDown(KeyCode.F4))

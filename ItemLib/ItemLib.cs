@@ -21,7 +21,7 @@ namespace ItemLib
 {
     public static class ItemLib
     {
-        public static int OriginalItemCount = (int)ItemIndex.Count;
+        public const int OriginalItemCount = (int) ItemIndex.Count;
         private static int _customItemCount;
         public static int CustomItemCount
         {
@@ -35,7 +35,7 @@ namespace ItemLib
         }
         public static int TotalItemCount;
 
-        public static int OriginalEquipmentCount = (int)EquipmentIndex.Count;
+        public const int OriginalEquipmentCount = (int) EquipmentIndex.Count;
         private static int _customEquipmentCount;
         public static int CustomEquipmentCount
         {
@@ -67,8 +67,6 @@ namespace ItemLib
             if (CatalogInitialized)
                 return;
 
-            // https://discordapp.com/channels/562704639141740588/562704639569428506/575081634898903040 ModRecalc implementation ?
-
             // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called, though all mods should have the BepinDependency in their header so it should never happen actually.
 
             Logger.Info("[ItemLib] Initializing");
@@ -81,7 +79,7 @@ namespace ItemLib
                 InitCatalogHook();
             CatalogInitialized = true;
 
-            // Call DefineItems because catalog is already made...
+            // Call DefineItems because catalog is already made.
             // Also hooking on it execute body method, EmitDelegate not included.
 
             MethodInfo defineItems = typeof(ItemCatalog).GetMethod("DefineItems", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
@@ -212,7 +210,7 @@ namespace ItemLib
 
                 cursor.GotoNext(
                         i => i.MatchLdcI4(0),
-                        i => i.MatchStloc(0)
+                        i => i.MatchStloc(1)
                 );
                 cursor.Index++;
 
@@ -558,7 +556,7 @@ namespace ItemLib
 
             // EliteCatalog
 
-            IL.RoR2.EliteCatalog.IsEquipmentElite += il =>
+            IL.RoR2.EliteCatalog.GetEquipmentEliteIndex += il =>
             {
                 ILCursor cursor = new ILCursor(il);
 
@@ -682,17 +680,6 @@ namespace ItemLib
                 all2.AddEquipment((EquipmentIndex)i);
 
             // CharacterModel
-
-            IL.RoR2.CharacterModel.ctor += il =>
-            {
-                ILCursor cursor = new ILCursor(il);
-
-                cursor.GotoNext(
-                    i => i.MatchLdcI4(OriginalItemCount)
-                );
-                cursor.Next.OpCode = OpCodes.Ldc_I4;
-                cursor.Next.Operand = TotalItemCount;
-            };
 
             IL.RoR2.CharacterModel.UpdateItemDisplay += il =>
             {
@@ -864,9 +851,9 @@ namespace ItemLib
                 orig(inventory, itemIndex, quantity);
             };
 
-            // LogBook. So for now we disable the logbook for custom items, since logbook is kinda linked to the data from the UserProfile,
-            // an alternative would be to have a reserved data file for custom items somewhere so we never interact directly with the so fragile UserProfile of the users.
-            // That way we could have a logbook working for custom items too !
+            // LogBook. So for now we disable the progress part in the logbook for custom items, since logbook progression is linked to the data from the UserProfile,
+            // the best solution would be to have a reserved data file for custom items somewhere so we never interact directly with the so fragile UserProfile of the users.
+            // That way we could have a logbook working for custom items too
             // For now lets assume the user unlocked / discovered the item so we can see 3d models on it :)
 
             // It normally check if we have at least picked it up once / unlocked the linked achievement for it.
@@ -904,7 +891,7 @@ namespace ItemLib
                         EquipmentDef equipmentDef = EquipmentCatalog.GetEquipmentDef(equipmentIndex);
                         self.AddDescriptionPanel(Language.GetString(equipmentDef.descriptionToken));
                         token = equipmentDef.loreToken;
-                        // this.statSheet.GetStatDisplayValue(PerEquipmentStatDef.totalTimeHeld.FindStatDef(equipmentIndex))
+                        // this.statSheet.GetStatDisplayValue(PerEquipmentStatDef.totalTimeHeld.FindStatDef(equipmentIndex)) Custom file too
                         // this.statSheet.GetStatDisplayValue(PerEquipmentStatDef.totalTimesFired.FindStatDef(equipmentIndex))
                         string stringFormatted3 = Language.GetStringFormatted("EQUIPMENT_PREFIX_TOTALTIMEHELD", "Unknown");
                         string stringFormatted4 = Language.GetStringFormatted("EQUIPMENT_PREFIX_USECOUNT", "Unknown");
@@ -939,7 +926,7 @@ namespace ItemLib
                 return orig(userProfile, entry, status);
             };
 
-            // IL is calling virt methods for the linq where lol, i'll do IL another day 
+            // IL is calling virt methods for the linq where lol
             // What we do here : Restrict first Entry IEnumerable to < originalItemCount and concat a new one to the first for custom items
             On.RoR2.UI.LogBook.LogBookController.BuildPickupEntries += (orig) =>
             {

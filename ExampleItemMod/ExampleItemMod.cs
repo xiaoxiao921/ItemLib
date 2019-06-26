@@ -88,7 +88,6 @@ namespace ExampleItemMod
                 nameToken = "Custom Equipment Example",
                 pickupToken = "pickup sample text",
                 descriptionToken = "description in logbook",
-                addressToken = "",
                 canDrop = true,
                 enigmaCompatible = true
             };

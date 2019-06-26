@@ -56,8 +56,7 @@ public static ItemLib.CustomItem Example()
 		pickupIconPath = "",
 		nameToken = "Custom Item Example",
 		pickupToken = "i'm a custom item. i do sticky bomb on kill",
-		descriptionToken = "yes",
-		addressToken = ""
+		descriptionToken = "yes"
 	};
 
 	return new CustomItem(newItemDef, _prefab, _icon);
@@ -102,7 +101,6 @@ public static ItemLib.CustomEquipment Test()
 		nameToken = "Custom Equipment Example",
 		pickupToken = "pickup sample text",
 		descriptionToken = "description in logbook",
-		addressToken = "",
 		canDrop = true,
 		enigmaCompatible = true
 	};
