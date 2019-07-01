@@ -843,6 +843,25 @@ namespace ItemLib
                 }
             };
 
+            On.RoR2.Stats.PerEquipmentStatDef.RegisterStatDefs += (orig) =>
+            {
+                var instancesList = R2API.Utils.Reflection.GetFieldValue<List<PerEquipmentStatDef>>(typeof(PerEquipmentStatDef), "instancesList");
+                foreach (PerEquipmentStatDef perEquipmentStatDef in instancesList)
+                {
+                    var prefix = R2API.Utils.Reflection.GetFieldValue<string>(perEquipmentStatDef, "prefix");
+                    var recordType = R2API.Utils.Reflection.GetFieldValue<StatRecordType>(perEquipmentStatDef, "recordType");
+                    var dataType = R2API.Utils.Reflection.GetFieldValue<StatDataType>(perEquipmentStatDef, "dataType");
+                    var keyToStatDef = R2API.Utils.Reflection.GetFieldValue<StatDef[]>(perEquipmentStatDef, "keyToStatDef");
+                    foreach (EquipmentIndex equipmentIndex in EquipmentCatalog.allEquipment)
+                    {
+                        if ((int)equipmentIndex >= OriginalEquipmentCount)
+                            continue;
+                        StatDef statDef = StatDef.Register(prefix + "." + equipmentIndex.ToString(), recordType, dataType, 0.0);
+                        keyToStatDef[(int)equipmentIndex] = statDef;
+                    }
+                }
+            };
+
             // Normally push values to the StatSheet about the item (totalCollected etc). Saves to UserProfile
             On.RoR2.Stats.StatManager.OnServerItemGiven += (orig, inventory, itemIndex, quantity) =>
             {
