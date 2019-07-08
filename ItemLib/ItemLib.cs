@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using BepInEx;
 using MonoMod.Cil;
 using RoR2;
 using UnityEngine;
@@ -151,15 +152,23 @@ namespace ItemLib
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
             {
-                if (!dll.Contains("R2API"))
+                if (!dll.ToLower().Contains("r2api") || !dll.ToLower().Contains("mmhook"))
                     allAssemblies.Add(Assembly.LoadFile(dll));
             }
-            foreach (Assembly assembly in allAssemblies)
+            foreach (var assembly in allAssemblies)
             {
-                Type[] types = assembly.GetTypes();
+                Type pluginType = typeof(BaseUnityPlugin);
+                var types = new List<Type>();
 
-                // ReSharper disable once ForCanBeConvertedToForeach
-                for (int i = 0; i < types.Length; i++)
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (!type.IsInterface && !type.IsAbstract && pluginType.IsAssignableFrom(type))
+                    {
+                        types.Add(type);
+                    }   
+                }
+                
+                for (int i = 0; i < types.Count; i++)
                 {
                     foreach (var methodInfo in types.SelectMany(x => x.GetMethods()))
                     {
