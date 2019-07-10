@@ -153,7 +153,18 @@ namespace ItemLib
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
             {
                 if (!dll.ToLower().Contains("r2api") || !dll.ToLower().Contains("mmhook"))
-                    allAssemblies.Add(Assembly.LoadFile(dll));
+                {
+                    try // bepis code
+                    {
+                        allAssemblies.Add(Assembly.LoadFile(dll));
+                    }
+                    catch (BadImageFormatException) { } //unmanaged dll
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        Logger.Error($"Could not load \"{dll}\" as a plugin!");
+                    }
+                }
+                    
             }
             foreach (var assembly in allAssemblies)
             {
