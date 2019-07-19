@@ -916,18 +916,17 @@ namespace ItemLib
                 cursor.Emit(OpCodes.Bge_S, label);
             };
 
+            // Normally push values to the StatSheet about the item (totalCollected etc). Saves to UserProfile
             On.RoR2.Stats.StatManager.OnEquipmentActivated += (orig, activator, equipmentIndex) =>
             {
                 if(equipmentIndex < EquipmentIndex.Count)
                     orig(activator, equipmentIndex);
             };
 
-            // Normally push values to the StatSheet about the item (totalCollected etc). Saves to UserProfile
             On.RoR2.Stats.StatManager.OnServerItemGiven += (orig, inventory, itemIndex, quantity) =>
             {
-                if ((int)itemIndex >= OriginalItemCount)
-                    return;
-                orig(inventory, itemIndex, quantity);
+                if (itemIndex < ItemIndex.Count)
+                    orig(inventory, itemIndex, quantity);
             };
 
             // LogBook. So for now we disable the progress part in the logbook for custom items, since logbook progression is linked to the data from the UserProfile,
