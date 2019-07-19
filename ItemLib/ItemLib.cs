@@ -882,6 +882,46 @@ namespace ItemLib
                 }
             };
 
+            IL.RoR2.Stats.StatManager.ProcessCharacterUpdateEvents += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdloc(4),
+                    i => i.MatchLdcI4(-1)
+                );
+                cursor.Index += 2;
+                var label = cursor.Next.Operand;
+                cursor.Index++;
+
+                cursor.Emit(OpCodes.Ldloc, 4);
+                cursor.Emit(OpCodes.Ldc_I4, OriginalEquipmentCount);
+                cursor.Emit(OpCodes.Bge_S, label);
+            };
+
+            IL.RoR2.Stats.StatManager.ProcessCharacterUpdateEvents += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+
+                cursor.GotoNext(
+                    i => i.MatchLdloc(4),
+                    i => i.MatchLdcI4(-1)
+                );
+                cursor.Index += 2;
+                var label = cursor.Next.Operand;
+                cursor.Index++;
+
+                cursor.Emit(OpCodes.Ldloc, 4);
+                cursor.Emit(OpCodes.Ldc_I4, OriginalEquipmentCount);
+                cursor.Emit(OpCodes.Bge_S, label);
+            };
+
+            On.RoR2.Stats.StatManager.OnEquipmentActivated += (orig, activator, equipmentIndex) =>
+            {
+                if(equipmentIndex < EquipmentIndex.Count)
+                    orig(activator, equipmentIndex);
+            };
+
             // Normally push values to the StatSheet about the item (totalCollected etc). Saves to UserProfile
             On.RoR2.Stats.StatManager.OnServerItemGiven += (orig, inventory, itemIndex, quantity) =>
             {
