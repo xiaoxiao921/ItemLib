@@ -40,18 +40,18 @@ An AssetBundle project example is available [here](https://github.com/xiaoxiao92
 #### Custom Item Method Example
 ```csharp
 [Item(ItemAttribute.ItemType.Item)]
-public static ItemLib.CustomItem Example()
+public static CustomItem Test()
 {
-  // Load the AssetBundle you made with the Unity Editor
+	// Load the AssetBundle you made with the Unity Editor
 
-	_exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/exampleitemmod");
+	_exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/Rampage_data");
 
 	_prefab = _exampleAssetBundle.LoadAsset<GameObject>("Assets/Import/belt/belt.prefab");
 	_icon = _exampleAssetBundle.LoadAsset<Object>("Assets/Import/belt_icon/belt_icon.png");
 
 	ItemDef newItemDef = new ItemDef
 	{
-		tier = ItemTier.Tier1,
+		tier = ItemTier.Tier3,
 		pickupModelPath = "", // leave it empty and give directly the prefab / icon on the return but you can also use an already made prefab by putting a path in there.
 		pickupIconPath = "",
 		nameToken = "Custom Item Example",
@@ -59,7 +59,14 @@ public static ItemLib.CustomItem Example()
 		descriptionToken = "yes"
 	};
 
-	return new CustomItem(newItemDef, _prefab, _icon);
+	_itemDisplayRules = new ItemDisplayRule[1]; // keep this null if you don't want the item to show up on the survivor 3d model. You can have multiple rules !
+	_itemDisplayRules[0].followerPrefab = _prefab; // the prefab that will show up on the survivor
+	_itemDisplayRules[0].childName = "Chest"; // this will define the starting point for the prefab, you can see what are the differents name available in the prefab model of the survivors.
+	_itemDisplayRules[0].localScale = new Vector3(0.15f,0.15f,0.15f);
+	_itemDisplayRules[0].localAngles = new Vector3(0f, 180f, 0f);
+	_itemDisplayRules[0].localPos = new Vector3(-0.35f, -0.1f, 0f);
+
+	return new CustomItem(newItemDef, _prefab, _icon, _itemDisplayRules);
 }
 ```
 
@@ -104,6 +111,13 @@ public static ItemLib.CustomEquipment Test()
 		canDrop = true,
 		enigmaCompatible = true
 	};
+	
+	_itemDisplayRules = new ItemDisplayRule[1]; // keep this null if you don't want the item to show up on the survivor 3d model. You can have multiple rules !
+	_itemDisplayRules[0].followerPrefab = _prefab; // the prefab that will show up on the survivor
+	_itemDisplayRules[0].childName = "Chest"; // this will define the starting point for the prefab, you can see what are the differents name available in the prefab model of the survivors.
+	_itemDisplayRules[0].localScale = new Vector3(0.15f,0.15f,0.15f);
+	_itemDisplayRules[0].localAngles = new Vector3(0f, 180f, 0f);
+	_itemDisplayRules[0].localPos = new Vector3(-0.35f, -0.1f, 0f);
 
 	return new CustomEquipment(newEquipmentDef, _prefab, _icon);
 }
