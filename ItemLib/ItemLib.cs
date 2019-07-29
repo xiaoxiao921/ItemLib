@@ -11,6 +11,7 @@ using UnityEngine;
 using RoR2.Stats;
 using Mono.Cecil.Cil;
 using R2API;
+using R2API.Utils;
 using RoR2.UI;
 using RoR2.UI.LogBook;
 
@@ -62,6 +63,7 @@ namespace ItemLib
         public static IReadOnlyDictionary<string, int> EquipmentReferences;
 
         public static bool CatalogInitialized;
+        public static bool ItemDisplayInitialized;
 
         internal static void Initialize()
         {
@@ -159,7 +161,7 @@ namespace ItemLib
                         allAssemblies.Add(Assembly.LoadFile(dll));
                     }
                     catch (BadImageFormatException) { } //unmanaged dll
-                    catch (ReflectionTypeLoadException ex)
+                    catch (ReflectionTypeLoadException)
                     {
                         Logger.Error($"Could not load \"{dll}\" as a plugin!");
                     }
@@ -712,6 +714,39 @@ namespace ItemLib
                 cursor.Next.Operand = TotalItemCount;
             };
 
+            IL.RoR2.CharacterModel.UpdateMaterials += il =>
+            {
+                ILCursor cursor = new ILCursor(il);
+                var forCounterLoc = 0;
+                var itemDisplayLoc = 0;
+
+                cursor.GotoNext(
+                    i => i.MatchLdarg(0),
+                    i => i.MatchLdfld("RoR2.CharacterModel", "parentedPrefabDisplays"),
+                    i => i.MatchLdloc(out forCounterLoc)
+                );
+
+                cursor.GotoNext(
+                    i => i.MatchCall("RoR2.CharacterModel/ParentedPrefabDisplay", "get_itemDisplay"),
+                    i => i.MatchStloc(out itemDisplayLoc)
+                );
+                cursor.Index += 2;
+
+                cursor.Emit(OpCodes.Ldloc, itemDisplayLoc);
+                cursor.Emit(OpCodes.Call, typeof(UnityEngine.Object).GetMethodCached("op_Implicit"));
+                cursor.Emit(OpCodes.Brfalse, cursor.MarkLabel());
+                var brFalsePos = cursor.Index - 1;
+
+                cursor.GotoNext(
+                    i => i.MatchLdloc(forCounterLoc)
+                );
+                var label = cursor.MarkLabel();
+
+                cursor.Index = brFalsePos;
+                cursor.Next.Operand = label;
+
+            };
+
             // ItemDisplayRuleSet
 
             IL.RoR2.ItemDisplayRuleSet.ctor += il =>
@@ -747,6 +782,93 @@ namespace ItemLib
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = TotalEquipmentCount;
             };
+
+            On.RoR2.ItemDisplayRuleSet.GetItemDisplayRuleGroup += (orig, self, index) =>
+            {
+                if ((int)index >= OriginalItemCount)
+                {
+                    var itemRuleGroups = self.GetFieldValue<DisplayRuleGroup[]>("itemRuleGroups");
+                    var tmp = new DisplayRuleGroup[TotalItemCount];
+
+                    if (itemRuleGroups.Length < TotalItemCount)
+                    {
+                        for (var i = 0; i < itemRuleGroups.Length; i++)
+                        {
+                            tmp[i] = new DisplayRuleGroup
+                            {
+                                rules = new ItemDisplayRule[itemRuleGroups[i].rules.Length]
+                            };
+                            itemRuleGroups[i].rules.CopyTo(tmp[i].rules, 0);
+                        }
+
+                        for (var i = OriginalItemCount; i < TotalItemCount; i++)
+                        {
+                            var customItem = GetCustomItem(i);
+                            if (customItem?.ItemDisplayRules != null)
+                            {
+                                tmp[i] = new DisplayRuleGroup
+                                {
+                                    rules = customItem.ItemDisplayRules
+                                };
+
+                                continue;
+                            }
+
+                            tmp[i] = new DisplayRuleGroup
+                            {
+                                rules = new ItemDisplayRule[1]
+                            };
+                        }
+                        self.SetFieldValue("itemRuleGroups", tmp);
+                    }
+                }
+
+                return orig(self, index);
+            };
+
+            On.RoR2.ItemDisplayRuleSet.GetEquipmentDisplayRuleGroup += (orig, self, index) =>
+            {
+                if ((int)index >= OriginalEquipmentCount)
+                {
+                    var equipmentRuleGroups = self.GetFieldValue<DisplayRuleGroup[]>("equipmentRuleGroups");
+                    var tmp = new DisplayRuleGroup[TotalEquipmentCount];
+
+                    if (equipmentRuleGroups.Length < TotalEquipmentCount)
+                    {
+                        for (var i = 0; i < equipmentRuleGroups.Length; i++)
+                        {
+                            tmp[i] = new DisplayRuleGroup
+                            {
+                                rules = new ItemDisplayRule[equipmentRuleGroups[i].rules.Length]
+                            };
+                            equipmentRuleGroups[i].rules.CopyTo(tmp[i].rules, 0);
+                        }
+
+                        for (var i = OriginalEquipmentCount; i < TotalEquipmentCount; i++)
+                        {
+                            var customEquipment = GetCustomEquipment(i);
+                            if (customEquipment?.ItemDisplayRules != null)
+                            {
+                                tmp[i] = new DisplayRuleGroup
+                                {
+                                    rules = customEquipment.ItemDisplayRules
+                                };
+
+                                continue;
+                            }
+
+                            tmp[i] = new DisplayRuleGroup
+                            {
+                                rules = new ItemDisplayRule[1]
+                            };
+                        }
+                        self.SetFieldValue("equipmentRuleGroups", tmp);
+                    }
+                }
+
+                return orig(self, index);
+            };
+
 
             // RuleCatalog
 
@@ -911,7 +1033,7 @@ namespace ItemLib
                 if (itemIndex < ItemIndex.Count)
                     orig(inventory, itemIndex, quantity);
             };
-
+            
             // LogBook. So for now we disable the progress part in the logbook for custom items, since logbook progression is linked to the data from the UserProfile,
             // the best solution would be to have a reserved data file for custom items somewhere so we never interact directly with the so fragile UserProfile of the users.
             // That way we could have a logbook working for custom items too
@@ -1415,6 +1537,8 @@ namespace ItemLib
                 });
             };
 
+            // ItemDisplayRule on CharacterModel. Manually setting the followerprefab
+            
 
         }
 #if DEBUG

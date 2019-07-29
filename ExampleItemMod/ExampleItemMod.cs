@@ -25,13 +25,15 @@ namespace ExampleItemMod
         private static GameObject _prefab;
         private static Object _icon;
 
+        private static ItemDisplayRule[] _itemDisplayRules;
+
         public ExampleItemMod()
         {
             _myCustomItemId = ItemLib.ItemLib.GetEquipmentId("Custom Equipment Example");
 
             // Need to hook in here so the item actually proc, the orig method is a switch case on the equipmentIndex
 
-            On.RoR2.EquipmentSlot.PerformEquipmentAction += (orig, self, equipmentIndex) =>
+            /*On.RoR2.EquipmentSlot.PerformEquipmentAction += (orig, self, equipmentIndex) =>
             {
                 Debug.Log((int)equipmentIndex);
                 Debug.Log(_myCustomItemId);
@@ -41,7 +43,7 @@ namespace ExampleItemMod
                     return true; // must
                 }
                 return orig(self, equipmentIndex); // must
-            };
+            };*/
         }
 
         private static void DetonateAlive(float radius)
@@ -70,8 +72,8 @@ namespace ExampleItemMod
             }
         }
 
-        [Item(ItemAttribute.ItemType.Equipment)]
-        public static CustomEquipment Test()
+        [Item(ItemAttribute.ItemType.Item)]
+        public static CustomItem Test()
         {
             // Load the AssetBundle you made with the Unity Editor
 
@@ -80,19 +82,24 @@ namespace ExampleItemMod
             _prefab = _exampleAssetBundle.LoadAsset<GameObject>("Assets/Import/belt/belt.prefab");
             _icon = _exampleAssetBundle.LoadAsset<Object>("Assets/Import/belt_icon/belt_icon.png");
 
-            EquipmentDef newEquipmentDef = new EquipmentDef
+            ItemDef newItemDef = new ItemDef
             {
-                cooldown = 45f,
-                pickupModelPath = "",
+                tier = ItemTier.Tier3,
+                pickupModelPath = "", // leave it empty and give directly the prefab / icon on the return but you can also use an already made prefab by putting a path in there.
                 pickupIconPath = "",
-                nameToken = "Custom Equipment Example",
-                pickupToken = "pickup sample text",
-                descriptionToken = "description in logbook",
-                canDrop = true,
-                enigmaCompatible = true
+                nameToken = "Custom Item Example",
+                pickupToken = "i'm a custom item. i do sticky bomb on kill",
+                descriptionToken = "yes"
             };
 
-            return new CustomEquipment(newEquipmentDef, _prefab, _icon);
+            _itemDisplayRules = new ItemDisplayRule[1]; // keep it null if you don't want the item to show up on the survivor 3d model
+            _itemDisplayRules[0].followerPrefab = _prefab;
+            _itemDisplayRules[0].childName = "Chest";
+            _itemDisplayRules[0].localScale = new Vector3(0.15f,0.15f,0.15f);
+            _itemDisplayRules[0].localAngles = new Vector3(0f, 180f, 0f);
+            _itemDisplayRules[0].localPos = new Vector3(-0.35f, -0.1f, 0f);
+
+            return new CustomItem(newItemDef, _prefab, _icon, _itemDisplayRules);
         }
     }
 }

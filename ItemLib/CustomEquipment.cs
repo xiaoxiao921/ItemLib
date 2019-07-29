@@ -9,11 +9,15 @@ namespace ItemLib
         public GameObject Prefab;
         public Object Icon;
 
-        public CustomEquipment(EquipmentDef equipmentDef, GameObject prefab, Object icon)
+        public ItemDisplayRule[] ItemDisplayRules;
+
+        public CustomEquipment(EquipmentDef equipmentDef, GameObject prefab, Object icon, ItemDisplayRule[] itemDisplayRules)
         {
             EquipmentDef = equipmentDef;
             Prefab = prefab;
             Icon = icon;
+
+            ItemDisplayRules = itemDisplayRules;
         }
     }
 }
