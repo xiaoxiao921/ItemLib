@@ -9,7 +9,9 @@ namespace ItemLib
         public enum ItemType
         {
             Item,
-            Equipment
+            Equipment,
+            Buff,
+            Elite
         }
 
         public readonly ItemType Type;

@@ -24,6 +24,20 @@ namespace RoR2
         public static extern EquipmentDef GetEquipmentDef(EquipmentIndex equipmentIndex);
     }
 
+    internal class patch_EliteCatalog
+    {
+        [MonoModIgnore]
+        [NoInlining]
+        public static extern EliteDef GetEliteDef(EliteIndex eliteIndex);
+    }
+
+    internal class patch_BuffCatalog
+    {
+        [MonoModIgnore]
+        [NoInlining]
+        public static extern BuffDef GetBuffDef(BuffIndex buffIndex);
+    }
+
     [Serializable]
     internal struct patch_PickupIndex
     {

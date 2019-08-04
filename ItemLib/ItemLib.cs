@@ -23,6 +23,8 @@ namespace ItemLib
 {
     public static class ItemLib
     {
+        public const int EliteMaxTier = 3;
+
         public const int OriginalItemCount = (int) ItemIndex.Count;
         private static int _customItemCount;
         public static int CustomItemCount
@@ -51,16 +53,50 @@ namespace ItemLib
         }
         public static int TotalEquipmentCount;
 
+        public const int OriginalEliteCount = (int) EliteIndex.Count;
+        private static int _customEliteCount;
+        public static int CustomEliteCount
+        {
+            get
+            {
+                if (_customEliteCount == 0)
+                    GetAllCustomItemsAndEquipments();
+                return _customEliteCount;
+            }
+            private set => _customEliteCount = value;
+        }
+        public static int TotalEliteCount;
+
+        public const int OriginalBuffCount = (int) BuffIndex.Count;
+        private static int _customBuffCount;
+        public static int CustomBuffCount
+        {
+            get
+            {
+                if (_customBuffCount == 0)
+                    GetAllCustomItemsAndEquipments();
+                return _customBuffCount;
+            }
+            private set => _customBuffCount = value;
+        }
+        public static int TotalBuffCount;
+
         public static readonly int CoinCount = 1;
 
         private static readonly HashSet<MethodInfo> CustomItemHashSet = new HashSet<MethodInfo>();
         private static readonly HashSet<MethodInfo> CustomEquipmentHashSet = new HashSet<MethodInfo>();
+        private static readonly HashSet<MethodInfo> CustomEliteHashSet = new HashSet<MethodInfo>();
+        private static readonly HashSet<MethodInfo> CustomBuffHashSet = new HashSet<MethodInfo>();
 
         public static readonly List<CustomItem> CustomItemList = new List<CustomItem>();
         public static readonly List<CustomEquipment> CustomEquipmentList = new List<CustomEquipment>();
+        public static readonly List<CustomElite> CustomEliteList = new List<CustomElite>();
+        public static readonly List<CustomBuff> CustomBuffList = new List<CustomBuff>();
 
         public static IReadOnlyDictionary<string, int> ItemReferences;
         public static IReadOnlyDictionary<string, int> EquipmentReferences;
+        public static IReadOnlyDictionary<string, int> EliteReferences;
+        public static IReadOnlyDictionary<string, int> BuffReferences;
 
         public static bool CatalogInitialized;
         public static bool ItemDisplayInitialized;
@@ -77,6 +113,8 @@ namespace ItemLib
             GetAllCustomItemsAndEquipments();
             TotalItemCount = OriginalItemCount + CustomItemCount;
             TotalEquipmentCount = OriginalEquipmentCount + CustomEquipmentCount;
+            TotalEliteCount = OriginalEliteCount + CustomEliteCount;
+            TotalBuffCount = OriginalBuffCount + CustomBuffCount;
 
             if (!CatalogInitialized)
                 InitCatalogHook();
@@ -93,7 +131,56 @@ namespace ItemLib
             ConstructorInfo defineEquipments = typeof(EquipmentCatalog).TypeInitializer;
             defineEquipments.Invoke(null, null);
 
+            var defineElites = typeof(EliteCatalog).TypeInitializer;
+            defineElites.Invoke(null, null);
+
+            var defineBuffs = typeof(BuffCatalog).TypeInitializer;
+            defineBuffs.Invoke(null, null);
+
             InitHooks();
+
+            if (CustomEliteList.Count > 0)
+            {
+                var maxTier = CustomEliteList.Max(e => e.Tier);
+                if (maxTier < 2)
+                    maxTier = 2;
+                if (maxTier > EliteMaxTier)
+                    maxTier = EliteMaxTier;
+
+                //Get CombatDirector's existing elite tier table
+                var tiers = (CombatDirector.EliteTierDef[])typeof(CombatDirector).GetField("eliteTiers", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+
+                //We're going to replace it with an entirely new table
+                var newTiers = new CombatDirector.EliteTierDef[maxTier + 1];
+                for (int i = 0; i < newTiers.Length; i++)
+                {
+                    var newElites = CustomEliteList.Where(e => e.Tier == i).Select(e => e.EliteDef.eliteIndex).ToArray();
+                    if (newElites.Length == 0)
+                        continue;
+
+                    if (i < tiers.Length)
+                    {
+                        //Add new elites to this tier
+                        var tier = tiers[i];
+                        tier.eliteTypes = tier.eliteTypes.Concat(newElites).ToArray();
+                        newTiers[i] = tier;
+                    }
+                    else
+                    {
+                        //Create a brand new tier
+                        //TODO: Configure parameters
+                        var tier = new CombatDirector.EliteTierDef
+                        {
+                            costMultiplier = 1,
+                            damageBoostCoefficient = 1,
+                            healthBoostCoefficient = 1,
+                            isAvailable = () => Run.instance.loopClearCount > 0,
+                            eliteTypes = newElites
+                        };
+                        newTiers[i] = tier;
+                    }
+                }
+            }
         }
 
         public static int GetItemId(string name)
@@ -116,6 +203,24 @@ namespace ItemLib
             return id - TotalItemCount;
         }
 
+        public static int GetEliteId(string name)
+        {
+            if (!CatalogInitialized)
+                Initialize();
+
+            EliteReferences.TryGetValue(name, out var id);
+            return id;
+        }
+
+        public static int GetBuffId(string name)
+        {
+            if (!CatalogInitialized)
+                Initialize();
+
+            BuffReferences.TryGetValue(name, out var id);
+            return id;
+        }
+
         public static CustomItem GetCustomItem(string name)
         {
             return CustomItemList.FirstOrDefault(x => x.ItemDef.nameToken.Equals(name));
@@ -124,6 +229,16 @@ namespace ItemLib
         public static CustomEquipment GetCustomEquipment(string name)
         {
             return CustomEquipmentList.FirstOrDefault(x => x.EquipmentDef.nameToken.Equals(name));
+        }
+
+        public static CustomElite GetCustomElite(string name)
+        {
+            return CustomEliteList.FirstOrDefault(x => string.Equals(x.Name, name));
+        }
+
+        public static CustomBuff GetCustomBuff(string name)
+        {
+            return CustomBuffList.FirstOrDefault(x => string.Equals(x.Name, name));
         }
 
         public static CustomItem GetCustomItem(int indexValue)
@@ -137,9 +252,19 @@ namespace ItemLib
             return GetCustomEquipment(EquipmentReferences.FirstOrDefault(x => x.Value == indexValue).Key);
         }
 
+        public static CustomElite GetCustomElite(int indexValue)
+        {
+            return GetCustomElite(EliteReferences.FirstOrDefault(x => x.Value == indexValue).Key);
+        }
+
+        public static CustomBuff GetCustomBuff(int indexValue)
+        {
+            return GetCustomBuff(BuffReferences.FirstOrDefault(x => x.Value == indexValue).Key);
+        }
+
         public static void GetAllCustomItemsAndEquipments()
         {
-            if (_customItemCount != 0 || _customEquipmentCount != 0)
+            if (_customItemCount != 0 || _customEquipmentCount != 0 || _customEliteCount != 0 || _customBuffCount != 0)
                 return;
 
             var allAssemblies = new List<Assembly>();
@@ -188,11 +313,20 @@ namespace ItemLib
                         var customAttributes = methodInfo.GetCustomAttributes(false);
                         foreach (var attribute in customAttributes.OfType<ItemAttribute>())
                         {
-                            if (attribute.Type == ItemAttribute.ItemType.Item)
-                                CustomItemHashSet.Add(methodInfo);
-                            else
+                            switch (attribute.Type)
                             {
-                                CustomEquipmentHashSet.Add(methodInfo);
+                                case ItemAttribute.ItemType.Item:
+                                    CustomItemHashSet.Add(methodInfo);
+                                    break;
+                                case ItemAttribute.ItemType.Equipment:
+                                    CustomEquipmentHashSet.Add(methodInfo);
+                                    break;
+                                case ItemAttribute.ItemType.Elite:
+                                    CustomEliteHashSet.Add(methodInfo);
+                                    break;
+                                case ItemAttribute.ItemType.Buff:
+                                    CustomBuffHashSet.Add(methodInfo);
+                                    break;
                             }
                         }
                     }
@@ -209,14 +343,34 @@ namespace ItemLib
                 CustomEquipmentList.Add((CustomEquipment)mi.Invoke(null, null));
             }
 
+            foreach (var mi in CustomBuffHashSet)
+            {
+                CustomBuffList.Add((CustomBuff)mi.Invoke(null, null));
+            }
+
+            foreach (var mi in CustomEliteHashSet)
+            {
+                var elite = (CustomElite) mi.Invoke(null, null);
+                CustomEliteList.Add(elite);
+                CustomEquipmentList.Add(elite.Equipment);
+                CustomBuffList.Add(elite.Buff);
+                elite.EliteDef.eliteEquipmentIndex = (EquipmentIndex) (OriginalEquipmentCount + CustomEquipmentList.Count - 1);
+                elite.Buff.BuffDef.eliteIndex = (EliteIndex)(OriginalEliteCount + CustomEliteList.Count - 1);
+                elite.Equipment.EquipmentDef.passiveBuff = (BuffIndex) (OriginalBuffCount + CustomBuffList.Count - 1);
+            }
+
             _customItemCount = CustomItemHashSet.Count;
-            _customEquipmentCount = CustomEquipmentHashSet.Count;
+            _customEquipmentCount = CustomEquipmentList.Count;
+            _customEliteCount = CustomEliteList.Count;
+            _customBuffCount = CustomBuffList.Count;
         }
 
         private static void InitCatalogHook()
         {
-            var tmp = new Dictionary<string, int>();
-            var tmp2 = new Dictionary<string, int>();
+            var tmpItems = new Dictionary<string, int>();
+            var tmpEquips = new Dictionary<string, int>();
+            var tmpElites = new Dictionary<string, int>();
+            var tmpBuffs = new Dictionary<string, int>();
 
             // Make it so itemDefs is large enough for all the new items.
             IL.RoR2.ItemCatalog.DefineItems += il =>
@@ -247,10 +401,10 @@ namespace ItemLib
                             registerItem.Invoke(null, para);
                         //Debug.Log("adding custom item at index : " + (i + OriginalItemCount));
 
-                        tmp.Add(CustomItemList[i].ItemDef.nameToken, i + OriginalItemCount);
+                        tmpItems.Add(CustomItemList[i].ItemDef.nameToken, i + OriginalItemCount);
                     }
                     Logger.Info("[ItemLib] Added " + _customItemCount + " custom items");
-                    ItemReferences = new ReadOnlyDictionary<string, int>(tmp);
+                    ItemReferences = new ReadOnlyDictionary<string, int>(tmpItems);
                 });
             };
 
@@ -284,10 +438,80 @@ namespace ItemLib
                         if (registerEquipment != null)
                             registerEquipment.Invoke(null, para);
 
-                        tmp2.Add(CustomEquipmentList[i].EquipmentDef.nameToken, i + OriginalEquipmentCount + TotalItemCount);
+                        tmpEquips.Add(CustomEquipmentList[i].EquipmentDef.nameToken, i + OriginalEquipmentCount + TotalItemCount);
                     }
                     Logger.Info("[ItemLib] Added " + _customEquipmentCount + " custom equipments");
-                    EquipmentReferences = new ReadOnlyDictionary<string, int>(tmp2);
+                    EquipmentReferences = new ReadOnlyDictionary<string, int>(tmpEquips);
+                });
+            };
+
+            MethodInfo registerElite = typeof(EliteCatalog).GetMethod("RegisterElite", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (registerElite == null)
+            {
+                Debug.LogError("Failed to bind RegisterElite method in EliteCatalog");
+                return;
+            }
+
+            //And finally elites
+            IL.RoR2.EliteCatalog.cctor += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalEliteCount));
+
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEliteCount;
+
+                //EliteCatalog doesn't do the check at the end for everything registered, so can just put the new registrations at the end
+                cursor.GotoNext(i => i.MatchRet());
+                cursor.EmitDelegate<Action>(() =>
+                {
+                    // Register the elites into the game and update eliteReferences so the mods know the id of their elites.
+                    for (int i = 0; i < CustomEliteCount; i++)
+                    {
+                        object[] para = { (EliteIndex)(i + OriginalEliteCount), CustomEliteList[i].EliteDef };
+                        registerElite.Invoke(null, para);
+
+                        tmpElites.Add(CustomEliteList[i].Name, i + OriginalEliteCount);
+                    }
+                    Logger.Info("[ItemLib] Added " + _customEliteCount + " custom elites");
+                    EliteReferences = new ReadOnlyDictionary<string, int>(tmpElites);
+                });
+            };
+
+            MethodInfo registerBuff = typeof(BuffCatalog).GetMethod("RegisterBuff", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (registerBuff == null)
+            {
+                Debug.LogError("Failed to bind RegisterBuff method in BuffCatalog");
+                return;
+            }
+
+            IL.RoR2.BuffCatalog.cctor += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
+
+                cursor.GotoNext(
+                    i => i.MatchLdcI4(0),
+                    i => i.MatchStloc(0)
+                );
+                cursor.Index++;
+
+                cursor.EmitDelegate<Action>(() =>
+                {
+                    // Register the items into the game and update buffReferences so the mods know the id of their buffs.
+                    for (int i = 0; i < CustomBuffCount; i++)
+                    {
+                        object[] para = {(BuffIndex) (i + OriginalBuffCount), CustomBuffList[i].BuffDef};
+                        registerBuff.Invoke(null, para);
+
+                        tmpBuffs.Add(CustomBuffList[i].Name, i + OriginalBuffCount);
+                    }
+
+                    Logger.Info("[ItemLib] Added " + _customBuffCount + " custom buffs");
+                    BuffReferences = new ReadOnlyDictionary<string, int>(tmpBuffs);
                 });
             };
         }
@@ -589,6 +813,25 @@ namespace ItemLib
                 cursor.Next.Operand = TotalEquipmentCount;
             };
 
+            IL.RoR2.EliteCatalog.GetEliteDef += il =>
+            {
+                var cursor = new ILCursor(il);
+
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalEliteCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalEliteCount;
+            };
+
+            // BuffCatalog
+
+            IL.RoR2.BuffCatalog.GetBuffDef += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
+            };
+
             IL.RoR2.RunReport.PlayerInfo.ctor += il =>
             {
                 ILCursor cursor = new ILCursor(il);
@@ -745,6 +988,17 @@ namespace ItemLib
                 cursor.Index = brFalsePos;
                 cursor.Next.Operand = label;
 
+            };
+
+
+            // CharacterBody
+
+            IL.RoR2.CharacterBody.ctor += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
             };
 
             // ItemDisplayRuleSet
@@ -1538,8 +1792,62 @@ namespace ItemLib
             };
 
             // ItemDisplayRule on CharacterModel. Manually setting the followerprefab
-            
 
+            // BuffDisplay
+
+            IL.RoR2.UI.BuffDisplay.AllocateIcons += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
+            };
+
+            IL.RoR2.UI.BuffDisplay.UpdateLayout += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
+            };
+
+            // BuffMask
+
+            IL.RoR2.BuffMask.cctor += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
+            };
+
+            // Icon injection for buff
+
+            IL.RoR2.UI.BuffIcon.UpdateIcon += il =>
+            {
+                var cursor = new ILCursor(il);
+                cursor.GotoNext(i => i.MatchLdfld("RoR2.BuffDef", "iconPath"));
+                cursor.Index--;
+
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.Emit(OpCodes.Ldfld,
+                            typeof(BuffIcon).GetField("buffIndex", BindingFlags.Instance | BindingFlags.Public));
+                cursor.Emit(OpCodes.Ldc_I4, OriginalBuffCount);
+
+                var caseOriginal = cursor.DefineLabel();
+                var setSprite = cursor.DefineLabel();
+                cursor.Emit(OpCodes.Blt, caseOriginal);
+
+                cursor.Emit(OpCodes.Ldarg_0);
+                cursor.Emit(OpCodes.Ldfld,
+                            typeof(BuffIcon).GetField("buffIndex", BindingFlags.Instance | BindingFlags.Public));
+                cursor.EmitDelegate<Func<BuffIndex, Sprite>>(buffIndex => GetCustomBuff((int)buffIndex).Icon);
+                cursor.Emit(OpCodes.Br, setSprite);
+                cursor.MarkLabel(caseOriginal);
+
+                cursor.GotoNext(i => i.MatchCallvirt("UnityEngine.UI.Image", "set_sprite"));
+                cursor.MarkLabel(setSprite);
+            };
         }
 #if DEBUG
         /*[Item(ItemAttribute.ItemType.Item)]

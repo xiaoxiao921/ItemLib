@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Schema;
 using BepInEx;
 using ItemLib;
 using RoR2;
@@ -44,6 +45,18 @@ namespace ExampleItemMod
                 }
                 return orig(self, equipmentIndex); // must
             };*/
+
+            var eliteId = ItemLib.ItemLib.GetEliteId("Cloaky");
+            var buff = ItemLib.ItemLib.GetBuffId("Affix_Cloaky");
+            On.RoR2.CharacterBody.SetBuffCount += (orig, self, type, count) =>
+            {
+                orig(self, type, count);
+                if (type == (BuffIndex) buff)
+                {
+                    Debug.Log("Sneaky cloaky...");
+                    orig(self, BuffIndex.Cloak, count);
+                }
+            };
         }
 
         private static void DetonateAlive(float radius)
@@ -76,11 +89,7 @@ namespace ExampleItemMod
         public static CustomItem Test()
         {
             // Load the AssetBundle you made with the Unity Editor
-
-            _exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/Rampage_data");
-
-            _prefab = _exampleAssetBundle.LoadAsset<GameObject>("Assets/Import/belt/belt.prefab");
-            _icon = _exampleAssetBundle.LoadAsset<Object>("Assets/Import/belt_icon/belt_icon.png");
+            LoadAssets();
 
             ItemDef newItemDef = new ItemDef
             {
@@ -92,14 +101,58 @@ namespace ExampleItemMod
                 descriptionToken = "yes"
             };
 
+            return new CustomItem(newItemDef, _prefab, _icon, _itemDisplayRules);
+        }
+
+        [Item(ItemAttribute.ItemType.Elite)]
+        public static CustomElite TestElite()
+        {
+            LoadAssets();
+
+            var eliteDef = new EliteDef
+            {
+                modifierToken = "Cloaky",
+                color = new Color32(255, 105, 180, 255)
+            };
+            var equipDef = new EquipmentDef
+            {
+                cooldown = 10f,
+                pickupModelPath = "",
+                pickupIconPath = "",
+                nameToken = "Cloaky",
+                pickupToken = "Cloaky",
+                descriptionToken = "Cloaky",
+                canDrop = false,
+                enigmaCompatible = false
+            };
+            var buffDef = new BuffDef
+            {
+                buffColor = eliteDef.color,
+                canStack = false
+            };
+
+            var equip = new CustomEquipment(equipDef, _prefab, _icon, _itemDisplayRules);
+            var buff = new CustomBuff("Affix_Cloaky", buffDef, null);              
+            var elite = new CustomElite("Cloaky", eliteDef, equip, buff, 1);
+            return elite;
+        }
+
+        private static void LoadAssets()
+        {
+            if (_exampleAssetBundle != null)
+                return;
+
+            _exampleAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/Rampage_data");
+
+            _prefab = _exampleAssetBundle.LoadAsset<GameObject>("Assets/Import/belt/belt.prefab");
+            _icon = _exampleAssetBundle.LoadAsset<Object>("Assets/Import/belt_icon/belt_icon.png");
+
             _itemDisplayRules = new ItemDisplayRule[1]; // keep it null if you don't want the item to show up on the survivor 3d model
             _itemDisplayRules[0].followerPrefab = _prefab;
             _itemDisplayRules[0].childName = "Chest";
-            _itemDisplayRules[0].localScale = new Vector3(0.15f,0.15f,0.15f);
+            _itemDisplayRules[0].localScale = new Vector3(0.15f, 0.15f, 0.15f);
             _itemDisplayRules[0].localAngles = new Vector3(0f, 180f, 0f);
             _itemDisplayRules[0].localPos = new Vector3(-0.35f, -0.1f, 0f);
-
-            return new CustomItem(newItemDef, _prefab, _icon, _itemDisplayRules);
         }
     }
 }
