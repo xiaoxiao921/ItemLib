@@ -38,6 +38,12 @@ namespace RoR2
         public static extern BuffDef GetBuffDef(BuffIndex buffIndex);
     }
 
+    //internal class patch_CombatDirector
+    //{
+    //    [NoReadOnly]
+    //    private static CombatDirector.EliteTierDef[] eliteTiers;
+    //}
+
     [Serializable]
     internal struct patch_PickupIndex
     {

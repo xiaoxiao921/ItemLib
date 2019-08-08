@@ -148,7 +148,9 @@ namespace ItemLib
                     maxTier = EliteMaxTier;
 
                 //Get CombatDirector's existing elite tier table
-                var tiers = (CombatDirector.EliteTierDef[])typeof(CombatDirector).GetField("eliteTiers", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+                var tiersField =
+                    typeof(CombatDirector).GetField("eliteTiers", BindingFlags.Static | BindingFlags.NonPublic);
+                var tiers = (CombatDirector.EliteTierDef[])tiersField.GetValue(null);
 
                 //We're going to replace it with an entirely new table
                 var newTiers = new CombatDirector.EliteTierDef[maxTier + 1];
@@ -156,7 +158,10 @@ namespace ItemLib
                 {
                     var newElites = CustomEliteList.Where(e => e.Tier == i).Select(e => e.EliteDef.eliteIndex).ToArray();
                     if (newElites.Length == 0)
+                    {
+                        newTiers[i] = tiers[i];
                         continue;
+                    }
 
                     if (i < tiers.Length)
                     {
@@ -180,6 +185,8 @@ namespace ItemLib
                         newTiers[i] = tier;
                     }
                 }
+
+                tiersField.SetValue(null, newTiers);
             }
         }
 
@@ -718,7 +725,7 @@ namespace ItemLib
             var lunarItems = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => (x.ItemDef.itemIndex)).ToArray();
             var bossItems = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => (x.ItemDef.itemIndex)).ToArray();
 
-            var equipments = CustomEquipmentList.Select(x => (x.EquipmentDef.equipmentIndex)).ToArray();
+            var equipments = CustomEquipmentList.Where(c => c.EquipmentDef.canDrop).Select(x => (x.EquipmentDef.equipmentIndex)).ToArray();
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier1, t1Items);
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier2, t2Items);
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier3, t3Items);

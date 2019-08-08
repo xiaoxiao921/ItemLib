@@ -8,6 +8,12 @@ namespace RoR2
     public class NoInlining : Attribute
     {
     }
+
+    [MonoModCustomMethodAttribute("NoReadOnly")]
+    public class NoReadOnly : Attribute
+    {
+
+    }
 }
 
 namespace MonoMod
@@ -16,5 +22,7 @@ namespace MonoMod
     {
         // ReSharper disable once UnusedParameter.Global
         public static void NoInlining(MethodDefinition method, CustomAttribute attrib) => method.NoInlining = true;
+
+        public static void NoReadOnly(FieldDefinition field, CustomAttribute attrib) => field.IsInitOnly = false;
     }
 }
