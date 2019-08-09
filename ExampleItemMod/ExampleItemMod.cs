@@ -62,16 +62,16 @@ namespace ExampleItemMod
             //(Though, by the way, it has a built-in sticky bomb)
             var card = new EliteAffixCard
             {
-                spawnWeight = 0.1f,
-                costMultiplier = 6.0f,
-                damageBoostCoeff = 2.0f,
-                healthBoostCoeff = 4.7f,
+                spawnWeight = 0.1f,         //Only 10% as likely to spawn compared to baseline vanilla elites
+                costMultiplier = 6.0f,      //Costs 6x, which is the same as tier 1 elites
+                damageBoostCoeff = 2.0f,    //Damage boost the same as vanilla elites
+                healthBoostCoeff = 4.7f,    //Health boost the same as vanilla elites
                 eliteType = (EliteIndex) eliteId,
                 onSpawned = m => m.inventory.GiveItem(ItemIndex.StickyBomb, 1)
             };
 
             //Except it's really common on beetles for some reason
-            card.spawnCardMultipliers.Add("cscbeetle", 20);
+            card.spawnCardMultipliers.Add("cscbeetle", 20); //20x more likely than vanilla for this elite type to be chosen on Beetles
 
             //Add it to the list so that it's available for spawning with ESO
             EliteSpawningOverhaul.Cards.Add(card);
@@ -120,6 +120,21 @@ namespace ExampleItemMod
             };
 
             return new CustomItem(newItemDef, _prefab, _icon, _itemDisplayRules);
+        }
+
+        [Item(ItemAttribute.ItemType.Buff)]
+        public static CustomBuff TestBuff()
+        {
+            LoadAssets();
+
+            var buffDef = new BuffDef
+            {
+                buffColor = Color.green,
+                canStack = false
+            };
+
+            Sprite icon = null; //Can load a custom sprite asset here; null defaults to a blank colored square
+            return new CustomBuff("MyBuff", buffDef, icon);
         }
 
         [Item(ItemAttribute.ItemType.Elite)]
