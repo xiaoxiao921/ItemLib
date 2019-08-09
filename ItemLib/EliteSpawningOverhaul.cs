@@ -9,9 +9,14 @@ using MonoMod.Cil;
 using RoR2;
 namespace ItemLib
 {
+    /// <summary>
+    /// Provides a toolset for customizing elite spawning on a per-elite basis; this may be disabled in the ItemLib configuration,
+    /// so consumers of this class may look at the <see cref="Enabled"/> property to check this.  Cards are automatically created
+    /// for the vanilla elite types with parameters matching those from the vanilla game.
+    /// </summary>
     public static class EliteSpawningOverhaul
     {
-        public static void Init()
+        internal static void Init()
         {
             On.RoR2.CombatDirector.PrepareNewMonsterWave += CombatDirectorOnPrepareNewMonsterWave;
             IL.RoR2.CombatDirector.AttemptSpawnOnTarget += CombatDirectorOnAttemptSpawnOnTarget;
@@ -59,8 +64,15 @@ namespace ItemLib
             Enabled = true;
         }
 
+        /// <summary>
+        /// Whether ESO is enabled; if false, any Cards will be ignored
+        /// </summary>
         public static bool Enabled { get; private set; }
 
+        /// <summary>
+        /// The cards used for assigning Elite affixes to spawned enemies; note that you may register multiple cards with the same EliteIndex,
+        /// which can be useful for creating different 'tiers' of the same elite type, with stat boosts or other customization using the onSpawned delegate.
+        /// </summary>
         public static List<EliteAffixCard> Cards { get; } = new List<EliteAffixCard>();
 
         private static Dictionary<CombatDirector, EliteAffixCard> _chosenAffix = new Dictionary<CombatDirector, EliteAffixCard>();

@@ -57,6 +57,24 @@ namespace ExampleItemMod
                     orig(self, BuffIndex.Cloak, count);
                 }
             };
+
+            //Overall, this elite is pretty rare
+            //(Though, by the way, it has a built-in sticky bomb)
+            var card = new EliteAffixCard
+            {
+                spawnWeight = 0.1f,
+                costMultiplier = 6.0f,
+                damageBoostCoeff = 2.0f,
+                healthBoostCoeff = 4.7f,
+                eliteType = (EliteIndex) eliteId,
+                onSpawned = m => m.inventory.GiveItem(ItemIndex.StickyBomb, 1)
+            };
+
+            //Except it's really common on beetles for some reason
+            card.spawnCardMultipliers.Add("cscbeetle", 20);
+
+            //Add it to the list so that it's available for spawning with ESO
+            EliteSpawningOverhaul.Cards.Add(card);
         }
 
         private static void DetonateAlive(float radius)

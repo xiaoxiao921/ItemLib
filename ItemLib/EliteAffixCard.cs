@@ -5,6 +5,14 @@ using RoR2;
 
 namespace ItemLib
 {
+    /// <summary>
+    /// Card specifying the spawn probability, cost and power level of a particular elite type.  Costlier elites
+    /// will tend to only show up later in the game, but may still spawn quite often once the difficulty gets high
+    /// enough that the CombatDirector has a lot of budget to work with.  You can use <see cref="spawnWeight"/> to
+    /// adjust how frequently the elite type spawns when it can afford it and can individually tweak each elite
+    /// type's cost/dmg/hp boosts.  For extra fun, consider hooking the onSpawned delegate to add extra power, such
+    /// as by granting items.  You can also create multiple cards for the same elite type, with different costs/weights.
+    /// </summary>
     public sealed class EliteAffixCard
     {
         public EliteIndex eliteType;

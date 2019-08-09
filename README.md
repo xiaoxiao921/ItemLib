@@ -1,5 +1,5 @@
 # ItemLib
-A library for custom items and equipments in Risk of Rain 2.
+A library for custom items, equipments, buffs and elites in Risk of Rain 2.
 
 ### Table of Contents
 
@@ -27,8 +27,8 @@ You may have to fix the assembly reference `ItemLib.dll` for the ExampleItemMod 
 
 ### Using the library for your mod
 
-Once your project is ready you'll want to have a method defined that will return a CustomItem / CustomEquipment object and have an Item Attribute at the top so that the library can load it. \
-Depending on what you want (item or equipment) you'll want to change the ItemType (enum) in the attribute. \
+Once your project is ready you'll want to have a method defined that will return a CustomItem / CustomEquipment / CustomBuff/ CustomElite object and have an Item Attribute at the top so that the library can load it. \
+Depending on what you want, you'll want to change the ItemType (enum) in the attribute. \
 Leave both `pickupModelPath` and/or `pickupIconPath` empty if you want to have a custom prefab / icon for your item. \
 For having a custom prefab and icon you will need to make an AssetBundle in Unity, you could also download the unitypackage and use it as an example.
 
@@ -140,3 +140,12 @@ On.RoR2.EquipmentSlot.PerformEquipmentAction += (orig, self, equipmentIndex) =>
 	return orig(self, equipmentIndex); // must
 };
 ```
+
+### Custom Buffs
+Buffs in RoR2 are status effects, which may or may not be 'buffs' in the beneficial sense.  By creating a custom buff, it will add an array entry to all characters that can track whether that buff is present, will automatically display an icon when the buff is active and also gives you access to handy methods like adding a timed buff to a character that automatically decays.  To create a custom buff, just provide an Icon, buffColor and whether it's stackable.  IF no Icon is specified, it will default to a square of the buffColor provided.
+
+### Custom Elites
+
+
+### Elite Spawning Overhaul
+The built-in tier system for elites is fairly limiting.  For example, if you want an elite type to be costly, like Malachites, it will also end up having the huge dmg and hp boosts for Malachites, which you might not want in all cases.  ESO provides an alternate mechanism for elite spawning with more flexibility, modeled after the 'Spawn Card' system.  This feature may be disabled in the configuration for ItemLib, in which case spawning will revert to the vanilla tier-based mechanism.
