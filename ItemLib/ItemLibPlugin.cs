@@ -31,6 +31,12 @@ namespace ItemLib
 
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
 
+            if (ItemLibConfig.EnableEliteSpawningOverhaul.Value)
+            {
+                EliteSpawningOverhaul.Init();
+                Debug.Log("Elite Spawning Overhaul has been enabled");
+            }
+
             On.RoR2.Console.Awake += (orig, self) =>
             {
                 CommandHelper.RegisterCommands(self);
