@@ -27,6 +27,7 @@ namespace ItemLib
 #if DEBUG
             Logger.LogInfo("[ItemLib] Debug");
 #endif
+            ItemLibConfig.Init(Config);
             ItemLib.Initialize();
 
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };

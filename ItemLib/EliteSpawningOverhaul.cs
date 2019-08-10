@@ -7,6 +7,8 @@ using System.Text;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using RoR2;
+using UnityEngine;
+
 namespace ItemLib
 {
     /// <summary>
@@ -145,18 +147,24 @@ namespace ItemLib
             c.GotoNext(i => i.MatchLdloc(2),
                        i => i.MatchLdfld("RoR2.CombatDirector/EliteTierDef", "healthBoostCoefficient"));
 
-            //We're going to replace these 6 instructions:
-            //IL_03d5: ldloc.2
-            //IL_03d6: ldfld float32 RoR2.CombatDirector / EliteTierDef::healthBoostCoefficient
-            //IL_03db: stloc.s V_8
-            //IL_03dd: ldloc.2
-            //IL_03de: ldfld float32 RoR2.CombatDirector / EliteTierDef::damageBoostCoefficient
-            //IL_03e3: stloc.s V_9
-            c.RemoveRange(6);
+            //From here we need to back up a bit due to a brfalse that points to this instruction
+            var fixBranch = c.DefineLabel();
+            c.GotoPrev(i => i.MatchBrfalse(out var oldLabel));
+            c.Next.OpCode = OpCodes.Brfalse;
+            c.Next.Operand = fixBranch;
+
+            c.GotoNext(i => i.MatchLdloc(2),
+                       i => i.MatchLdfld("RoR2.CombatDirector/EliteTierDef", "healthBoostCoefficient"));
+
+            c.MarkLabel(fixBranch);
             c.Emit(OpCodes.Ldarg_0);
             c.Emit(OpCodes.Ldloca_S, (byte) 8);
             c.Emit(OpCodes.Ldloca_S, (byte) 9);
             c.EmitDelegate<GetCoeffsDel>(GetCoeffs);
+            var skip2 = c.DefineLabel();
+            c.Emit(OpCodes.Br, skip2);
+            c.Index += 6;
+            c.MarkLabel(skip2);
 
             //Finally, just before it launches the spawnEffect, we'll give the card's creator a chance to apply changes to the character
             c.GotoNext(i => i.MatchLdarg(0),
@@ -205,7 +213,7 @@ namespace ItemLib
             var c = new ILCursor(il);
 
             //We completely replace this getter
-            c.RemoveRange(c.Instrs.Count);
+            c.Goto(0);
             c.EmitDelegate<Func<float>>(GetHighestEliteCostMultiplier);
             c.Emit(OpCodes.Ret);
         }

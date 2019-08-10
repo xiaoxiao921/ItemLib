@@ -161,7 +161,7 @@ Buffs in RoR2 are status effects, which may or may not be 'buffs' in the benefic
 ```
 
 #### Custom Elites
-Elites in Risk of Rain 2 are internally made up of three key elements.  There is an EliteDef, plus every elite has a custom Equipment, which then passive applies a custom Buff.  To create custom elites, you only need to implement one method and the associated equipment/buff will automatically be created and linked to it.  This method is implemented very much like the custom items and equipment:
+Elites in Risk of Rain 2 are internally made up of three key elements.  There is an EliteDef, plus every elite has a custom Equipment, which then passively applies a custom Buff.  To create custom elites, you only need to implement one method and the associated equipment/buff will automatically be created and linked to it.  This method is implemented very much like the custom items and equipment:
 ```csharp
         [Item(ItemAttribute.ItemType.Elite)]
         public static CustomElite TestElite()
@@ -207,7 +207,7 @@ Once you've defined a custom elite, you can make it eligible for spawning like t
 	//(Though, by the way, it has a built-in sticky bomb)
 	var card = new EliteAffixCard
 	{
-		spawnWeight = 0.1f,				//Only 10% as likely to spawn compared to baseline vanilla elites
+		spawnWeight = 0.1f,			//Only 10% as likely to spawn compared to baseline vanilla elites
 		costMultiplier = 6.0f,			//Costs 6x, which is the same as tier 1 elites
 		damageBoostCoeff = 2.0f,		//Damage boost the same as vanilla elites
 		healthBoostCoeff = 4.7f,		//Health boost the same as vanilla elites
