@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
-public static class Reflection
+internal static class Reflection
 {
     private static readonly BindingFlags _defaultFlags
         = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
