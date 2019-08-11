@@ -13,7 +13,7 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        public const string ModVer = "0.0.15";
+        public const string ModVer = "0.1.0";
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
 
@@ -27,9 +27,16 @@ namespace ItemLib
 #if DEBUG
             Logger.LogInfo("[ItemLib] Debug");
 #endif
+            ItemLibConfig.Init(Config);
             ItemLib.Initialize();
 
             On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
+
+            if (ItemLibConfig.EnableEliteSpawningOverhaul.Value)
+            {
+                EliteSpawningOverhaul.Init();
+                Debug.Log("Elite Spawning Overhaul has been enabled");
+            }
 
             On.RoR2.Console.Awake += (orig, self) =>
             {

@@ -1,5 +1,5 @@
 # ItemLib
-A library for custom items and equipments in Risk of Rain 2.
+A library for custom items, equipments, buffs and elites in Risk of Rain 2.
 
 ### Table of Contents
 
@@ -27,8 +27,8 @@ You may have to fix the assembly reference `ItemLib.dll` for the ExampleItemMod 
 
 ### Using the library for your mod
 
-Once your project is ready you'll want to have a method defined that will return a CustomItem / CustomEquipment object and have an Item Attribute at the top so that the library can load it. \
-Depending on what you want (item or equipment) you'll want to change the ItemType (enum) in the attribute. \
+Once your project is ready you'll want to have a method defined that will return a CustomItem / CustomEquipment / CustomBuff / CustomElite object and have an Item Attribute at the top so that the library can load it. \
+Depending on what you want, you'll want to change the ItemType (enum) in the attribute. \
 Leave both `pickupModelPath` and/or `pickupIconPath` empty if you want to have a custom prefab / icon for your item. \
 For having a custom prefab and icon you will need to make an AssetBundle in Unity, you could also download the unitypackage and use it as an example.
 
@@ -140,3 +140,88 @@ On.RoR2.EquipmentSlot.PerformEquipmentAction += (orig, self, equipmentIndex) =>
 	return orig(self, equipmentIndex); // must
 };
 ```
+
+#### Custom Buffs
+Buffs in RoR2 are status effects, which may or may not be 'buffs' in the beneficial sense.  By creating a custom buff, it will add an array entry to all characters that can track whether that buff is present, will automatically display an icon when the buff is active and also gives you access to handy methods like adding a timed buff to a character that automatically decays.  To create a custom buff, just provide an Icon, buffColor and whether it's stackable.  If no Icon is specified, it will default to a square of the buffColor provided.  To make the buff have effects in the code, hook whatever methods you want to modify, then use CharacterBody.HasBuff to check for its presence.  You can use AddBuff and AddTimedBuff to apply the buff.
+```csharp
+	[Item(ItemAttribute.ItemType.Buff)]
+	public static CustomBuff TestBuff()
+	{
+		LoadAssets();
+
+		var buffDef = new BuffDef
+		{
+			buffColor = Color.green,
+			canStack = false
+		};
+
+		Sprite icon = null; //Can load a custom sprite asset here; null defaults to a blank colored square
+		return new CustomBuff("MyBuff", buffDef, icon);
+	}
+```
+
+#### Custom Elites
+Elites in Risk of Rain 2 are internally made up of three key elements.  There is an EliteDef, plus every elite has a custom Equipment, which then passively applies a custom Buff.  To create custom elites, you only need to implement one method and the associated equipment/buff will automatically be created and linked to it.  This method is implemented very much like the custom items and equipment:
+```csharp
+        [Item(ItemAttribute.ItemType.Elite)]
+        public static CustomElite TestElite()
+        {
+            LoadAssets();
+
+            var eliteDef = new EliteDef
+            {
+                modifierToken = "Cloaky",
+                color = new Color32(255, 105, 180, 255)
+            };
+            var equipDef = new EquipmentDef
+            {
+                cooldown = 10f,
+                pickupModelPath = "",
+                pickupIconPath = "",
+                nameToken = "Cloaky",
+                pickupToken = "Cloaky",
+                descriptionToken = "Cloaky",
+                canDrop = false,
+                enigmaCompatible = false
+            };
+            var buffDef = new BuffDef
+            {
+                buffColor = eliteDef.color,
+                canStack = false
+            };
+
+            var equip = new CustomEquipment(equipDef, _prefab, _icon, _itemDisplayRules);
+            var buff = new CustomBuff("Affix_Cloaky", buffDef, null);              
+            var elite = new CustomElite("Cloaky", eliteDef, equip, buff, 1);
+            return elite;
+        }
+```
+Note that we're reusing equipment _prefab and _icon assets from the Equipment example here.  The final parameter of the CustomElite constructor here is the 'tier'.  According to vanila spawning mechanics, tiers 1 and 2 have different modifiers, as well as some additional requirements (tier 2 can only spawn after the first loop.)  You can specify a tier (1 or 2) of you wish to use the vanilla spawning or you can use the overhauled Elite spawning mechanics described below.
+
+#### Elite Spawning Overhaul
+The built-in tier system for elites is fairly limiting.  For example, if you want an elite type to be costly, like Malachites, it will also end up having the huge dmg and hp boosts for Malachites, which you might not want in all cases.  ESO provides an alternate mechanism for elite spawning with more flexibility, modeled after the 'SpawnCard' system RoR2 uses.  This feature may be disabled in the configuration for ItemLib, in which case spawning will revert to the vanilla tier-based mechanism.
+
+Once you've defined a custom elite, you can make it eligible for spawning like this:
+```csharp
+	//Overall, this elite is pretty rare
+	//(Though, by the way, it has a built-in sticky bomb)
+	var card = new EliteAffixCard
+	{
+		spawnWeight = 0.1f,			//Only 10% as likely to spawn compared to baseline vanilla elites
+		costMultiplier = 6.0f,			//Costs 6x, which is the same as tier 1 elites
+		damageBoostCoeff = 2.0f,		//Damage boost the same as vanilla elites
+		healthBoostCoeff = 4.7f,		//Health boost the same as vanilla elites
+		eliteType = (EliteIndex) eliteId,
+		onSpawned = m => m.inventory.GiveItem(ItemIndex.StickyBomb, 1)
+	};
+
+	//Except it's really common on beetles for some reason
+	card.spawnCardMultipliers.Add("cscbeetle", 20);	//20x more likely than vanilla for this elite type to be chosen on Beetles
+
+	//Add it to the list so that it's available for spawning with ESO
+	EliteSpawningOverhaul.Cards.Add(card);
+```
+
+Note that there is an onSpawned hook provided that you can use to set up each newly created elite CharacterMaster instance; in this case, the elite monster is granted an item.  To add other types of effects caused by this elite, hook areas of the code you want to change and then use CharacterBody.HasBuff to check for the elite buff.  Do remember that players can get this buff too if they have Wake of Vultures and kill an elite with your new type or if they pickup the rarely dropped elite equipment.
+
+It's possible to create more than one EliteAffixCard for the same elite type, giving the cards different weights, costs, boosts, etc.  This can let you create multiple tiers of your elite types or to add new versions of the vanilla elites with different power levels.  The vanilla elite settings can also be modified by modifying the elements in EliteSpawningOverhaul.Cards, though bear in mind that other mods might try to do the same thing.
