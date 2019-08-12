@@ -27,14 +27,7 @@ namespace ItemLib
 #if DEBUG
             Logger.LogInfo("[ItemLib] Debug");
 #endif
-            ItemLibConfig.Init(Config);
             ItemLib.Initialize();
-
-            if (ItemLibConfig.EnableEliteSpawningOverhaul.Value)
-            {
-                EliteSpawningOverhaul.Init();
-                Logger.LogInfo("Elite Spawning Overhaul has been enabled");
-            }
 
             On.RoR2.Console.Awake += (orig, self) =>
             {

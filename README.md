@@ -196,32 +196,4 @@ Elites in Risk of Rain 2 are internally made up of three key elements.  There is
             return elite;
         }
 ```
-Note that we're reusing equipment _prefab and _icon assets from the Equipment example here.  The final parameter of the CustomElite constructor here is the 'tier'.  According to vanila spawning mechanics, tiers 1 and 2 have different modifiers, as well as some additional requirements (tier 2 can only spawn after the first loop.)  You can specify a tier (1 or 2) of you wish to use the vanilla spawning or you can use the overhauled Elite spawning mechanics described below.
-
-#### Elite Spawning Overhaul
-The built-in tier system for elites is fairly limiting.  For example, if you want an elite type to be costly, like Malachites, it will also end up having the huge dmg and hp boosts for Malachites, which you might not want in all cases.  ESO provides an alternate mechanism for elite spawning with more flexibility, modeled after the 'SpawnCard' system RoR2 uses.  This feature may be disabled in the configuration for ItemLib, in which case spawning will revert to the vanilla tier-based mechanism.
-
-Once you've defined a custom elite, you can make it eligible for spawning like this:
-```csharp
-	//Overall, this elite is pretty rare
-	//(Though, by the way, it has a built-in sticky bomb)
-	var card = new EliteAffixCard
-	{
-		spawnWeight = 0.1f,			//Only 10% as likely to spawn compared to baseline vanilla elites
-		costMultiplier = 6.0f,			//Costs 6x, which is the same as tier 1 elites
-		damageBoostCoeff = 2.0f,		//Damage boost the same as vanilla elites
-		healthBoostCoeff = 4.7f,		//Health boost the same as vanilla elites
-		eliteType = (EliteIndex) eliteId,
-		onSpawned = m => m.inventory.GiveItem(ItemIndex.StickyBomb, 1)
-	};
-
-	//Except it's really common on beetles for some reason
-	card.spawnCardMultipliers.Add("cscbeetle", 20);	//20x more likely than vanilla for this elite type to be chosen on Beetles
-
-	//Add it to the list so that it's available for spawning with ESO
-	EliteSpawningOverhaul.Cards.Add(card);
-```
-
-Note that there is an onSpawned hook provided that you can use to set up each newly created elite CharacterMaster instance; in this case, the elite monster is granted an item.  To add other types of effects caused by this elite, hook areas of the code you want to change and then use CharacterBody.HasBuff to check for the elite buff.  Do remember that players can get this buff too if they have Wake of Vultures and kill an elite with your new type or if they pickup the rarely dropped elite equipment.
-
-It's possible to create more than one EliteAffixCard for the same elite type, giving the cards different weights, costs, boosts, etc.  This can let you create multiple tiers of your elite types or to add new versions of the vanilla elites with different power levels.  The vanilla elite settings can also be modified by modifying the elements in EliteSpawningOverhaul.Cards, though bear in mind that other mods might try to do the same thing.
+Note that we're reusing equipment _prefab and _icon assets from the Equipment example here.  The final parameter of the CustomElite constructor here is the 'tier'.  According to vanila spawning mechanics, tiers 1 and 2 have different modifiers, as well as some additional requirements (tier 2 can only spawn after the first loop.)  For more fine-grained control over spawning, consider using the Elite Spawning Overhaul mod.
