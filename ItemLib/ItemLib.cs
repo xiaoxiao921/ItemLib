@@ -172,8 +172,6 @@ namespace ItemLib
             {
                 defineItems.Invoke(null, null);
             }
-
-            Debug.Log("itemDefs array size " + typeof(ItemCatalog).GetFieldValue<ItemDef[]>("itemDefs").Length);
             
             var defineEquipments = typeof(EquipmentCatalog).TypeInitializer;
             defineEquipments.Invoke(null, null);
