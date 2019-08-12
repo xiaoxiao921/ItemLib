@@ -47,9 +47,8 @@ namespace RoR2
     [Serializable]
     internal struct patch_PickupIndex
     {
-        private static readonly int OriginalItemCount = ItemLib.ItemLib.OriginalItemCount;
         private static readonly int CustomItemCount = ItemLib.ItemLib.CustomItemCount;
-        private static readonly int TotalItemCount = OriginalItemCount + CustomItemCount;
+        private static readonly int TotalItemCount = ItemLib.ItemLib.OriginalItemCount + CustomItemCount;
 
         private static readonly int OriginalEquipmentCount = ItemLib.ItemLib.OriginalEquipmentCount;
         private static readonly int CustomEquipmentCount = ItemLib.ItemLib.CustomEquipmentCount;
@@ -69,11 +68,11 @@ namespace RoR2
             allPickupNames[0] = "None";
             for (ItemIndex itemIndex = ItemIndex.Syringe; itemIndex < (ItemIndex)TotalItemCount; itemIndex++)
             {
-                allPickupNames[(int)(1 + itemIndex)] = "ItemIndex." + itemIndex.ToString();
+                allPickupNames[(int)(1 + itemIndex)] = "ItemIndex." + itemIndex;
             }
             for (EquipmentIndex equipmentIndex = EquipmentIndex.CommandMissile; equipmentIndex < (EquipmentIndex)TotalEquipmentCount; equipmentIndex++)
             {
-                allPickupNames[(int)(TotalItemCount + 1 + equipmentIndex)] = "EquipmentIndex." + equipmentIndex.ToString();
+                allPickupNames[(int)(TotalItemCount + 1 + equipmentIndex)] = "EquipmentIndex." + equipmentIndex;
             }
             for (int i = TotalItemCount + TotalEquipmentCount; i < TotalItemCount + TotalEquipmentCount + CoinCount; i++)
             {

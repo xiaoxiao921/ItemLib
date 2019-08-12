@@ -27,7 +27,7 @@
       <HintPath>..\libs\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="MonoMod.RuntimeDetour">
-      <HintPath>..\..\JarlykMods\Dependencies\MonoMod.RuntimeDetour.dll</HintPath>
+      <HintPath>..\libs\MonoMod.RuntimeDetour.dll</HintPath>
     </Reference>
     <Reference Include="MonoMod.Utils">
       <HintPath>..\libs\MonoMod.Utils.dll</HintPath>

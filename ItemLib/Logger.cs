@@ -2,7 +2,7 @@
 
 namespace ItemLib
 {
-    internal class Logger
+    internal static class Logger
     {
         public static Action<object> Fatal = delegate { };
         public static Action<object> Error = delegate { };

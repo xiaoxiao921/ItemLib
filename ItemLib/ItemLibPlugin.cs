@@ -30,12 +30,10 @@ namespace ItemLib
             ItemLibConfig.Init(Config);
             ItemLib.Initialize();
 
-            On.RoR2.RoR2Application.UnitySystemConsoleRedirector.Redirect += orig => { };
-
             if (ItemLibConfig.EnableEliteSpawningOverhaul.Value)
             {
                 EliteSpawningOverhaul.Init();
-                Debug.Log("Elite Spawning Overhaul has been enabled");
+                Logger.LogInfo("Elite Spawning Overhaul has been enabled");
             }
 
             On.RoR2.Console.Awake += (orig, self) =>
@@ -146,18 +144,16 @@ namespace ItemLib
                     Debug.Log("Specified player index does not exist");
                     return null;
                 }
-                else
+
+                foreach (NetworkUser n in NetworkUser.readOnlyInstancesList)
                 {
-                    foreach (NetworkUser n in NetworkUser.readOnlyInstancesList)
+                    if (n.userName.Equals(playerString, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        if (n.userName.Equals(playerString, StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            return n;
-                        }
+                        return n;
                     }
-                    Debug.Log("Specified player does not exist");
-                    return null;
                 }
+                Debug.Log("Specified player does not exist");
+                return null;
             }
 
             return null;
