@@ -387,31 +387,36 @@ namespace ItemLib
 
             foreach (MethodInfo mi in CustomItemHashSet)
             {
-                CustomItemList.Add((CustomItem)mi.Invoke(null, null));
+                if (mi.Invoke(null, null) is CustomItem item)
+                    CustomItemList.Add(item);
             }
 
             foreach (MethodInfo mi in CustomEquipmentHashSet)
             {
-                CustomEquipmentList.Add((CustomEquipment)mi.Invoke(null, null));
+                if (mi.Invoke(null, null) is CustomEquipment equipment)
+                    CustomEquipmentList.Add(equipment);
             }
 
             foreach (var mi in CustomBuffHashSet)
             {
-                CustomBuffList.Add((CustomBuff)mi.Invoke(null, null));
+                if (mi.Invoke(null, null) is CustomBuff buff)
+                    CustomBuffList.Add(buff);
             }
 
             foreach (var mi in CustomEliteHashSet)
             {
-                var elite = (CustomElite) mi.Invoke(null, null);
-                CustomEliteList.Add(elite);
-                CustomEquipmentList.Add(elite.Equipment);
-                CustomBuffList.Add(elite.Buff);
-                elite.EliteDef.eliteEquipmentIndex = (EquipmentIndex) (OriginalEquipmentCount + CustomEquipmentList.Count - 1);
-                elite.Buff.BuffDef.eliteIndex = (EliteIndex)(OriginalEliteCount + CustomEliteList.Count - 1);
-                elite.Equipment.EquipmentDef.passiveBuff = (BuffIndex) (OriginalBuffCount + CustomBuffList.Count - 1);
+                if (mi.Invoke(null, null) is CustomElite elite)
+                {
+                    CustomEliteList.Add(elite);
+                    CustomEquipmentList.Add(elite.Equipment);
+                    CustomBuffList.Add(elite.Buff);
+                    elite.EliteDef.eliteEquipmentIndex = (EquipmentIndex)(OriginalEquipmentCount + CustomEquipmentList.Count - 1);
+                    elite.Buff.BuffDef.eliteIndex = (EliteIndex)(OriginalEliteCount + CustomEliteList.Count - 1);
+                    elite.Equipment.EquipmentDef.passiveBuff = (BuffIndex)(OriginalBuffCount + CustomBuffList.Count - 1);
+                }
             }
 
-            _customItemCount = CustomItemHashSet.Count;
+            _customItemCount = CustomItemList.Count;
             _customEquipmentCount = CustomEquipmentList.Count;
             _customEliteCount = CustomEliteList.Count;
             _customBuffCount = CustomBuffList.Count;
