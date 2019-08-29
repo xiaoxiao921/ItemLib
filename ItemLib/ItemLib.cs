@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using BepInEx;
+using BepInEx.Logging;
 using MonoMod.Cil;
 using RoR2;
 using UnityEngine;
@@ -154,7 +155,21 @@ namespace ItemLib
 
             // mod order don't matter : ItemDef are retrieved through MethodInfo and custom attributes. If they loaded before the Lib and cannot find their items on the Dictionary this get called, though all mods should have the BepinDependency in their header so it should never happen actually.
 
-            Logger.Info("[ItemLib] Initializing");
+            ItemLibPlugin.Logger.LogInfo("Initializing");
+
+            // Checking that the monomod patch is there.
+
+            var methodImplementationFlag = typeof(ItemCatalog).GetMethodCached("GetItemDef").GetMethodImplementationFlags();
+            if (!methodImplementationFlag.ToString().Equals("NoInlining"))
+            {
+                var info = new List<string> {
+                    "The ItemLib monomod patch is not properly installed",
+                    "Please make sure that a file called Assembly-CSharp.ItemLib.MM.dll ",
+                    "is in the BepInEx\\monomod folder"
+                };
+
+                ItemLibPlugin.Logger.LogBlockError(info);
+            }
 
             InitCatalogHook();
 
@@ -326,7 +341,7 @@ namespace ItemLib
             while (!path.EndsWith("ins"))
             {
                 path = Directory.GetParent(path).FullName;
-                Logger.Warning("ItemLib should be placed in its own folder in the BepinEx \\plugins folder. Path should be optimally looking like this : plugins\\ItemLib\\ItemLib.dll");
+                ItemLibPlugin.Logger.LogWarning("ItemLib should be placed in its own folder in the BepinEx \\plugins folder. Path should be optimally looking like this : plugins\\ItemLib\\ItemLib.dll");
             }
 
             foreach (string dll in Directory.GetFiles(path, "*.dll", SearchOption.AllDirectories))
@@ -340,7 +355,7 @@ namespace ItemLib
                     catch (BadImageFormatException) { } //unmanaged dll
                     catch (ReflectionTypeLoadException)
                     {
-                        Logger.Error($"Could not load \"{dll}\" as a plugin!");
+                        ItemLibPlugin.Logger.LogError($"Could not load \"{dll}\" as a plugin!");
                     }
                 }
                     
@@ -468,7 +483,7 @@ namespace ItemLib
 
                         tmpItems.Add(CustomItemList[i].ItemDef.nameToken, i + OriginalItemCount);
                     }
-                    Logger.Info("[ItemLib] Added " + _customItemCount + " custom items");
+                    ItemLibPlugin.Logger.LogInfo("Added " + _customItemCount + " custom items");
                     ItemReferences = new ReadOnlyDictionary<string, int>(tmpItems);
                 });
             };
@@ -505,7 +520,7 @@ namespace ItemLib
 
                         tmpEquips.Add(CustomEquipmentList[i].EquipmentDef.nameToken, i + OriginalEquipmentCount + TotalItemCount);
                     }
-                    Logger.Info("[ItemLib] Added " + _customEquipmentCount + " custom equipments");
+                    ItemLibPlugin.Logger.LogInfo("Added " + _customEquipmentCount + " custom equipments");
                     EquipmentReferences = new ReadOnlyDictionary<string, int>(tmpEquips);
                 });
             };
@@ -543,7 +558,7 @@ namespace ItemLib
 
                         tmpElites.Add(CustomEliteList[i].Name, i + OriginalEliteCount);
                     }
-                    Logger.Info("[ItemLib] Added " + _customEliteCount + " custom elites");
+                    ItemLibPlugin.Logger.LogInfo("Added " + _customEliteCount + " custom elites");
                     EliteReferences = new ReadOnlyDictionary<string, int>(tmpElites);
                 });
             };
@@ -586,7 +601,7 @@ namespace ItemLib
                         tmpBuffs.Add(CustomBuffList[i].Name, i + OriginalBuffCount);
                     }
 
-                    Logger.Info("[ItemLib] Added " + _customBuffCount + " custom buffs");
+                    ItemLibPlugin.Logger.LogInfo("Added " + _customBuffCount + " custom buffs");
                     BuffReferences = new ReadOnlyDictionary<string, int>(tmpBuffs);
                 });
             };

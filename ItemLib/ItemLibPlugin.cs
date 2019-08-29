@@ -1,5 +1,6 @@
 ﻿using System;
 using BepInEx;
+using BepInEx.Logging;
 using RoR2;
 using UnityEngine;
 // ReSharper disable UnusedMember.Local
@@ -13,9 +14,11 @@ namespace ItemLib
     [BepInPlugin(ModGuid, ModName, ModVer)]
     public class ItemLibPlugin : BaseUnityPlugin
     {
-        public const string ModVer = "0.1.0";
+        public const string ModVer = "0.1.1";
         public const string ModName = "ItemLib";
         public const string ModGuid = "dev.iDeathHD.ItemLib";
+
+        internal new static ManualLogSource Logger { get; set; }
 
 #if DEBUG
         private static GameObject _chest;
@@ -23,7 +26,7 @@ namespace ItemLib
 
         public ItemLibPlugin()
         {
-            InitLogger();
+            Logger = base.Logger;
 #if DEBUG
             Logger.LogInfo("[ItemLib] Debug");
 #endif
@@ -150,16 +153,6 @@ namespace ItemLib
             }
 
             return null;
-        }
-
-        public void InitLogger()
-        {
-            global::ItemLib.Logger.Debug = Logger.LogDebug;
-            global::ItemLib.Logger.Error = Logger.LogError;
-            global::ItemLib.Logger.Fatal = Logger.LogFatal;
-            global::ItemLib.Logger.Info = Logger.LogInfo;
-            global::ItemLib.Logger.Message = Logger.LogMessage;
-            global::ItemLib.Logger.Warning = Logger.LogWarning;
         }
     }
 }
