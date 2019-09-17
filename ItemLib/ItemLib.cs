@@ -1347,19 +1347,27 @@ namespace ItemLib
                 }
             };
 
+            // Jump to the end of the loop if EquipmentIndex > OriginalEquipmentCount
             IL.RoR2.Stats.StatManager.ProcessCharacterUpdateEvents += il =>
             {
-                ILCursor cursor = new ILCursor(il);
+                var cursor = new ILCursor(il);
+                var currentEquipmentLoc = 0;
 
                 cursor.GotoNext(
-                    i => i.MatchLdloc(4),
-                    i => i.MatchLdcI4(-1)
+                    i => i.MatchCallvirt<Inventory>("get_currentEquipmentIndex"),
+                    i => i.MatchStloc(out currentEquipmentLoc)
                 );
+                cursor.GotoNext(
+                    i => i.MatchLdloc(currentEquipmentLoc),
+                    i => i.MatchLdcI4(-1),
+                    i => i.MatchBeq(out _)
+                );
+
                 cursor.Index += 2;
                 var label = cursor.Next.Operand;
                 cursor.Index++;
 
-                cursor.Emit(OpCodes.Ldloc, 4);
+                cursor.Emit(OpCodes.Ldloc, currentEquipmentLoc);
                 cursor.Emit(OpCodes.Ldc_I4, OriginalEquipmentCount);
                 cursor.Emit(OpCodes.Bge_S, label);
             };
