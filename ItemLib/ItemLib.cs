@@ -1091,6 +1091,11 @@ namespace ItemLib
                 cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
                 cursor.Next.OpCode = OpCodes.Ldc_I4;
                 cursor.Next.Operand = TotalBuffCount;
+
+                //CharacterBody now has two separate arrays related to buffs
+                cursor.GotoNext(i => i.MatchLdcI4(OriginalBuffCount));
+                cursor.Next.OpCode = OpCodes.Ldc_I4;
+                cursor.Next.Operand = TotalBuffCount;
             };
 
             // ItemDisplayRuleSet
