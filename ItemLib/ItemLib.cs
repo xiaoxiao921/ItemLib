@@ -15,6 +15,8 @@ using R2API;
 using R2API.Utils;
 using RoR2.UI;
 using RoR2.UI.LogBook;
+using Console = System.Console;
+using Logger = BepInEx.Logging.Logger;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Local
@@ -365,12 +367,21 @@ namespace ItemLib
                 Type pluginType = typeof(BaseUnityPlugin);
                 var types = new List<Type>();
 
-                foreach (var type in assembly.GetTypes())
+                try
                 {
-                    if (!type.IsInterface && !type.IsAbstract && pluginType.IsAssignableFrom(type))
+                    foreach (var type in assembly.GetTypes())
                     {
-                        types.Add(type);
-                    }   
+                        if (!type.IsInterface && !type.IsAbstract && pluginType.IsAssignableFrom(type))
+                        {
+                            types.Add(type);
+                        }
+                    }
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    Debug.LogError($"Type Load Error while attempting to query mod assembly {assembly.FullName} for items and equipment");
+                    Debug.LogException(ex);
+                    continue;
                 }
                 
                 for (int i = 0; i < types.Count; i++)
