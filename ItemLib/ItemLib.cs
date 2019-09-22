@@ -822,7 +822,10 @@ namespace ItemLib
             var lunarItems = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Lunar).Select(x => (x.ItemDef.itemIndex)).ToArray();
             var bossItems = CustomItemList.Where(x => x.ItemDef.tier == ItemTier.Boss).Select(x => (x.ItemDef.itemIndex)).ToArray();
 
-            var equipments = CustomEquipmentList.Where(c => c.EquipmentDef.canDrop).Select(x => (x.EquipmentDef.equipmentIndex)).ToArray();
+            var equipments = CustomEquipmentList.Where(c => c.EquipmentDef.canDrop && !c.EquipmentDef.isLunar).Select(x => (x.EquipmentDef.equipmentIndex)).ToArray();
+            List<EquipmentIndex> lunarEquipments = CustomEquipmentList.Where(c => c.EquipmentDef.canDrop && c.EquipmentDef.isLunar).Select(x => (x.EquipmentDef.equipmentIndex)).ToList();
+
+
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier1, t1Items);
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier2, t2Items);
             ItemDropAPI.AddToDefaultByTier(ItemTier.Tier3, t3Items);
@@ -830,6 +833,7 @@ namespace ItemLib
             ItemDropAPI.AddToDefaultByTier(ItemTier.Boss, bossItems);
 
             ItemDropAPI.AddToDefaultEquipment(equipments);
+            ItemDropAPI.AddDrops(ItemDropLocation.LunarChest, ItemDropAPI.ToSelection(lunarEquipments));
 
             //ItemCatalog
 
