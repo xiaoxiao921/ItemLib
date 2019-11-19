@@ -1,3 +1,5 @@
+# ItemLib has now been integrated directly into [R2API](https://github.com/risk-of-thunder/R2API/blob/master/R2API/ItemAPI.cs). This repo is now archived as all future update will be made into the R2API Submodule instead.
+
 # ItemLib
 A library for custom items, equipments, buffs and elites in Risk of Rain 2.
 
